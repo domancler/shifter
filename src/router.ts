@@ -1,5 +1,5 @@
-
 export type ScreenName =
+  | "login"
   | "menu"
   | "photo"
   | "manual"
