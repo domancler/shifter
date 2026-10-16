@@ -86,3 +86,26 @@
     margin-top: 0;
     font-size: 0.7rem;
 }
+
+
+/* Transizione leggera tra le schermate */
+@keyframes screen-enter {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.screen {
+    animation: screen-enter 100ms ease-out both;
+}
+
+/* Rispetta chi preferisce ridurre le animazioni */
+@media (prefers-reduced-motion: reduce) {
+    .screen {
+        animation: none;
+    }
+}
