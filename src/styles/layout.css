@@ -62,3 +62,27 @@
 .panel p {
     color: var(--muted);
 }
+
+
+/* Home: intestazione compatta */
+.home-screen {
+    padding-top: 12px;
+    padding-bottom: 16px;
+}
+
+.home-screen .brand-header {
+    padding: 4px 4px 8px;
+}
+
+.home-screen .brand-header h1 {
+    font-size: 2.1rem;
+}
+
+.home-screen .brand-header .muted {
+    margin: 4px 0 0;
+}
+
+.home-screen .footer-note {
+    margin-top: 0;
+    font-size: 0.7rem;
+}
