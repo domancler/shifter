@@ -1,3 +1,4 @@
+
 import { exportBackup } from "../model/backup";
 import { showToast } from "../toast";
 import { el } from "../ui";
@@ -30,7 +31,9 @@ function button(
   className: string,
   onClick: () => void,
 ): HTMLButtonElement {
-  return el("button", { text, className, onClick });
+  const result = el("button", { text, className, onClick });
+  result.type = "button";
+  return result;
 }
 
 function actionButton(
@@ -62,12 +65,9 @@ function entryLabel(entry: Entry): string {
   return entry ? entry.code : "Non compilato";
 }
 
-function countCompiledDays(
-  days: { entry: Entry }[],
-): number {
+function countCompiledDays(days: { entry: Entry }[]): number {
   return days.filter((day) => day.entry !== null).length;
 }
-
 
 function returnToMenuSafely(): void {
   const schedule = getActiveSchedule();
@@ -92,9 +92,7 @@ function returnToMenuSafely(): void {
   const heading = el("div", {
     className: "exit-dialog-heading",
   }, [
-    el("h2", {
-      text: "Programma non salvato",
-    }),
+    el("h2", { text: "Programma non salvato" }),
     button("×", "exit-dialog-close", closeDialog),
   ]);
 
@@ -137,9 +135,7 @@ function returnToMenuSafely(): void {
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      closeDialog();
-    }
+    if (event.key === "Escape") closeDialog();
   }
 
   overlay.addEventListener("click", (event) => {
@@ -150,7 +146,6 @@ function returnToMenuSafely(): void {
   document.body.append(overlay);
   stayButton.focus();
 }
-
 
 export function reviewScreen(): HTMLElement {
   const schedule = getActiveSchedule();
@@ -172,6 +167,7 @@ export function reviewScreen(): HTMLElement {
   const rowStates: {
     entry: HTMLElement;
     note: HTMLElement;
+    essential: HTMLButtonElement;
   }[] = [];
 
   function refreshCount(): void {
@@ -181,6 +177,30 @@ export function reviewScreen(): HTMLElement {
     compiledCount.textContent =
       `${countCompiledDays(latest.days)} / ${latest.days.length} giorni`;
   }
+
+
+  function updateEssentialButton(
+    element: HTMLButtonElement,
+    isEssential: boolean,
+    isCompiled: boolean,
+  ): void {
+    element.classList.toggle("is-active", isEssential);
+    element.textContent = "!";
+    element.title = isEssential
+      ? "Disattiva esigenza"
+      : "Attiva esigenza";
+
+    element.setAttribute(
+      "aria-label",
+      isEssential ? "Disattiva esigenza" : "Attiva esigenza",
+    );
+    element.setAttribute("aria-pressed", String(isEssential));
+
+    // Un giorno non compilato non può diventare esigenza.
+    // Se è già esigenza, deve comunque essere possibile disattivarla.
+    element.disabled = !isCompiled && !isEssential;
+  }
+
 
   function openEditor(index: number): void {
     const currentSchedule = getActiveSchedule();
@@ -218,9 +238,7 @@ export function reviewScreen(): HTMLElement {
     }
 
     function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") {
-        closeModal();
-      }
+      if (event.key === "Escape") closeModal();
     }
 
     function makeChoice(
@@ -228,11 +246,13 @@ export function reviewScreen(): HTMLElement {
       selected: boolean,
       onClick: () => void,
     ): HTMLButtonElement {
-      return button(
+      const choice = button(
         text,
         `review-choice${selected ? " is-selected" : ""}`,
         onClick,
       );
+      choice.setAttribute("aria-pressed", String(selected));
+      return choice;
     }
 
     function renderModal(): void {
@@ -307,6 +327,7 @@ export function reviewScreen(): HTMLElement {
           markScheduleUnsaved();
 
           const rowState = rowStates[index];
+
           rowState.entry.textContent =
             entryLabel(latest.days[index].entry);
           rowState.entry.classList.toggle(
@@ -320,6 +341,12 @@ export function reviewScreen(): HTMLElement {
             latest.days[index].note.trim()
               ? "Questa giornata contiene note"
               : "";
+
+          updateEssentialButton(
+            rowState.essential,
+            latest.days[index].isEssential === true,
+            latest.days[index].entry !== null,
+          );
 
           refreshCount();
           closeModal();
@@ -386,20 +413,81 @@ export function reviewScreen(): HTMLElement {
     const isMonday =
       new Date(`${day.date}T12:00:00`).getDay() === 1;
 
-    const row = button(
-      "",
-      `review-day-row${isMonday ? " review-week-start" : ""}`,
-      () => {
-        openEditor(index);
-      },
+    /*
+     * Il contenitore esterno separa la card dal pulsante Esigenza.
+     * Il punto esclamativo non occupa più spazio nella griglia della card.
+     */
+    const item = document.createElement("div");
+    item.className =
+      `review-day-item${isMonday ? " review-week-start" : ""}`;
+
+    const row = document.createElement("div");
+    row.className = "review-day-row";
+    row.setAttribute("role", "button");
+    row.tabIndex = 0;
+    row.setAttribute(
+      "aria-label",
+      `${formatDate(day.date, {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+      })}: ${entryLabel(day.entry)}. Apri per modificare.`,
     );
 
+    row.addEventListener("click", () => {
+      openEditor(index);
+    });
+
+    row.addEventListener("keydown", (event) => {
+      if (event.target !== row) return;
+
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openEditor(index);
+      }
+    });
+
     row.append(date, entry, noteIndicator, arrow);
-    list.append(row);
+
+    const essential = document.createElement("button");
+    essential.type = "button";
+    essential.className = "review-day-essential";
+    updateEssentialButton(
+      essential,
+      day.isEssential === true,
+      day.entry !== null,
+    );
+
+    essential.addEventListener("click", (event) => {
+      event.stopPropagation();
+
+      const latest = getActiveSchedule();
+      if (!latest) return;
+
+      const currentDay = latest.days[index];
+      currentDay.isEssential = currentDay.isEssential !== true;
+
+      setActiveSchedule(latest);
+      markScheduleUnsaved();
+
+
+      updateEssentialButton(
+        essential,
+        currentDay.isEssential === true,
+        currentDay.entry !== null,
+      );
+
+
+      essential.blur();
+    });
+
+    item.append(row, essential);
+    list.append(item);
 
     rowStates.push({
       entry,
       note: noteIndicator,
+      essential,
     });
   });
 
@@ -457,7 +545,6 @@ export function reviewScreen(): HTMLElement {
             ),
           ),
 
-
           actionButton(
             "↓",
             "Backup",
@@ -482,7 +569,8 @@ export function reviewScreen(): HTMLElement {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
 
-                const month = currentSchedule.period.start.slice(0, 7);
+                const month =
+                  currentSchedule.period.start.slice(0, 7);
 
                 link.href = url;
                 link.download = `Shifter_backup_${month}.json`;
@@ -491,7 +579,10 @@ export function reviewScreen(): HTMLElement {
                 link.click();
                 link.remove();
 
-                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                window.setTimeout(
+                  () => URL.revokeObjectURL(url),
+                  1000,
+                );
 
                 markScheduleSaved();
                 showToast(
@@ -499,7 +590,10 @@ export function reviewScreen(): HTMLElement {
                   "success",
                 );
               } catch (error) {
-                console.error("Errore durante l'esportazione del backup:", error);
+                console.error(
+                  "Errore durante l'esportazione del backup:",
+                  error,
+                );
 
                 showToast(
                   "Non è stato possibile esportare il backup. Riprova.",
@@ -508,7 +602,6 @@ export function reviewScreen(): HTMLElement {
               }
             },
           ),
-
         ]),
 
         el("div", { className: "review-actions-primary" }, [
@@ -528,7 +621,6 @@ export function reviewScreen(): HTMLElement {
     list,
   ]);
 
-  // Toolbar flottante durante lo scorrimento.
   const floatingToolbar = document.createElement("div");
   floatingToolbar.className = "review-floating-toolbar";
 

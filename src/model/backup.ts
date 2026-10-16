@@ -25,6 +25,7 @@ interface BackupFile {
     date: string;
     entry: Entry;
     note: string;
+    isEssential?: boolean;
   }[];
 }
 
@@ -53,15 +54,15 @@ function isValidEntry(value: unknown, date: string): value is Entry {
   }
 
   if (value.type !== "shift" ||
-      !SHIFT_CODES.includes(value.code as ShiftCode) ||
-      typeof value.start !== "string" ||
-      typeof value.end !== "string") {
+    !SHIFT_CODES.includes(value.code as ShiftCode) ||
+    typeof value.start !== "string" ||
+    typeof value.end !== "string") {
     return false;
   }
 
   if (!Number.isFinite(Date.parse(value.start)) ||
-      !Number.isFinite(Date.parse(value.end)) ||
-      Date.parse(value.end) <= Date.parse(value.start)) {
+    !Number.isFinite(Date.parse(value.end)) ||
+    Date.parse(value.end) <= Date.parse(value.start)) {
     return false;
   }
 
@@ -75,17 +76,17 @@ function isValidEntry(value: unknown, date: string): value is Entry {
 
 function validateBackup(value: unknown): BackupFile {
   if (!isObject(value) ||
-      value.format !== "shifter-backup" ||
-      value.version !== 1 ||
-      value.timezone !== "Europe/Rome" ||
-      typeof value.exportedAt !== "string" ||
-      !Number.isFinite(Date.parse(value.exportedAt)) ||
-      !isObject(value.period) ||
-      typeof value.period.label !== "string" ||
-      !isDate(value.period.start) ||
-      !isDate(value.period.end) ||
-      value.period.start > value.period.end ||
-      !Array.isArray(value.days)) {
+    value.format !== "shifter-backup" ||
+    value.version !== 1 ||
+    value.timezone !== "Europe/Rome" ||
+    typeof value.exportedAt !== "string" ||
+    !Number.isFinite(Date.parse(value.exportedAt)) ||
+    !isObject(value.period) ||
+    typeof value.period.label !== "string" ||
+    !isDate(value.period.start) ||
+    !isDate(value.period.end) ||
+    value.period.start > value.period.end ||
+    !Array.isArray(value.days)) {
     throw new Error("Il file non è un backup Shifter valido.");
   }
 
@@ -103,11 +104,20 @@ function validateBackup(value: unknown): BackupFile {
 
   const days = value.days.map((item, index) => {
     if (!isObject(item) ||
-        item.date !== expectedDates[index] ||
-        typeof item.note !== "string" ||
-        !isValidEntry(item.entry, item.date as string)) {
+      item.date !== expectedDates[index] ||
+      typeof item.note !== "string" ||
+      !isValidEntry(item.entry, item.date as string)) {
       throw new Error(
         `Dati non validi nel giorno ${expectedDates[index]}.`,
+      );
+    }
+
+    if (
+      item.isEssential !== undefined &&
+      typeof item.isEssential !== "boolean"
+    ) {
+      throw new Error(
+        `Valore esigenza non valido nel giorno ${expectedDates[index]}.`,
       );
     }
 
@@ -115,6 +125,7 @@ function validateBackup(value: unknown): BackupFile {
       date: item.date as string,
       entry: item.entry,
       note: item.note,
+      isEssential: item.isEssential === true,
     };
   });
 
@@ -143,6 +154,7 @@ export function exportBackup(schedule: Schedule): string {
       date: day.date,
       entry: day.entry ? { ...day.entry } : null,
       note: day.note,
+      isEssential: day.isEssential === true,
     })),
   };
 
@@ -169,6 +181,7 @@ export function importBackup(json: string): Schedule {
     days: backup.days.map((day) => ({
       ...day,
       entry: day.entry ? { ...day.entry } : null,
+      isEssential: day.isEssential === true,
     })),
   };
 }

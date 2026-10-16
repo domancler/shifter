@@ -15,6 +15,7 @@ export interface Day {
   date: string;
   entry: Entry;
   note: string;
+  isEssential?: boolean;
   calendarRef?: { provider: "google"; eventId: string; etag?: string; updated?: string };
 }
 
