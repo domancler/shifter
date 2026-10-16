@@ -18,15 +18,23 @@ const MONTHS = [
 
 const ESSENTIAL_COLOR = "980000";
 const DATE_GAP = " ".repeat(9);
-const TITLE_PREFIX = " ".repeat(7);
 
-// Altezza di una riga: Arial 11pt, interlinea 1,15 (≈ 14,6pt) in EMU.
-const LINE_EMU = 185420;
+// Interlinea FISSA (15pt) per le righe del corpo: così l'altezza di ogni riga è
+// identica in Word, LibreOffice e app mobili, e la graffa può essere precisa.
+const LINE_TWIPS = 300;
+const LINE_EMU = LINE_TWIPS * 635;
+// Il rosso (testo Arial 11pt) occupa solo una parte della riga da 15pt:
+// la graffa parte dalla cima delle cifre e finisce alla loro base.
+const BRACE_TOP_INSET = 63500;    // 5pt dall'alto della prima riga
+const BRACE_BOTTOM_INSET = 48260; // 3,8pt dal fondo dell'ultima riga
 const BRACE_X = 1104900;
 const BRACE_W = 400000;
-const BRACE_LINE = 76200;
+const BRACE_LINE = 19050;         // spessore 1,5pt
 const LABEL_X = BRACE_X + BRACE_W + 60000;
-const LABEL_W = 1100000;
+const LABEL_W = 1600000;
+const LABEL_SIZE = 32;            // mezzi punti: 32 = 16pt
+
+const BODY_PPR = `<w:spacing w:before="0" w:after="0" w:line="${LINE_TWIPS}" w:lineRule="exact"/>`;
 
 const NS =
   'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
@@ -68,15 +76,20 @@ interface Block {
   lines: number;
 }
 
+function spanHeight(lines: number): number {
+  return Math.round(lines * LINE_EMU - BRACE_TOP_INSET - BRACE_BOTTOM_INSET);
+}
+
 function brace(id: number, lines: number): string {
-  const height = Math.round(lines * LINE_EMU);
-  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${BRACE_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV><wp:extent cx="${BRACE_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Graffa ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${BRACE_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rightBrace"><a:avLst><a:gd name="adj1" fmla="val 50000"/><a:gd name="adj2" fmla="val 50000"/></a:avLst></a:prstGeom><a:noFill/><a:ln w="${BRACE_LINE}" cap="flat"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="solid"/></a:ln></wps:spPr><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+  const height = spanHeight(lines);
+  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${BRACE_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${BRACE_TOP_INSET}</wp:posOffset></wp:positionV><wp:extent cx="${BRACE_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Graffa ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${BRACE_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rightBrace"><a:avLst><a:gd name="adj1" fmla="val 50000"/><a:gd name="adj2" fmla="val 50000"/></a:avLst></a:prstGeom><a:noFill/><a:ln w="${BRACE_LINE}" cap="flat"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="solid"/></a:ln></wps:spPr><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
 }
 
 function label(id: number, lines: number): string {
-  const height = Math.round(lines * LINE_EMU);
-  const text = paragraph(run("ESIGENZA", '<w:color w:val="000000"/>'), '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>');
-  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${LABEL_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV><wp:extent cx="${LABEL_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Etichetta ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LABEL_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent>${text}</w:txbxContent></wps:txbx><wps:bodyPr lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"><a:noAutofit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+  const height = spanHeight(lines);
+  const labelSize = `<w:sz w:val="${LABEL_SIZE}"/><w:szCs w:val="${LABEL_SIZE}"/>`;
+  const text = paragraph(run("ESIGENZA", `<w:color w:val="000000"/>${labelSize}`), '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>');
+  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${LABEL_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${BRACE_TOP_INSET}</wp:posOffset></wp:positionV><wp:extent cx="${LABEL_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Etichetta ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LABEL_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent>${text}</w:txbxContent></wps:txbx><wps:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"><a:noAutofit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
 }
 
 export function buildDocumentXml(schedule: Schedule): string {
@@ -86,8 +99,7 @@ export function buildDocumentXml(schedule: Schedule): string {
   const header = [
     paragraph(),
     paragraph(
-      run(TITLE_PREFIX, '<w:b/><w:bCs/><w:sz w:val="40"/><w:szCs w:val="40"/>') +
-        run(`PROGRAMMATO ${monthName}`, '<w:b/><w:bCs/><w:sz w:val="40"/><w:szCs w:val="40"/>'),
+      run(`PROGRAMMATO ${monthName}`, '<w:b/><w:bCs/><w:sz w:val="40"/><w:szCs w:val="40"/>'),
       '<w:jc w:val="center"/>',
     ),
     paragraph(
@@ -131,13 +143,13 @@ export function buildDocumentXml(schedule: Schedule): string {
   let drawingId = 1;
   const body = lines.map((line, index) => {
     const rPr = line.essential ? `<w:color w:val="${ESSENTIAL_COLOR}"/>` : "";
-    if (!line.day) return paragraph("", rPr ? `<w:rPr>${rPr}</w:rPr>` : "");
+    if (!line.day) return paragraph("", BODY_PPR + (rPr ? `<w:rPr>${rPr}</w:rPr>` : ""));
     let inner = run(formatDay(line.day), rPr);
     const block = blocks.find((candidate) => candidate.startLine === index);
     if (block) {
       inner += brace(drawingId++, block.lines) + label(drawingId++, block.lines);
     }
-    return paragraph(inner);
+    return paragraph(inner, BODY_PPR);
   });
 
   const sectPr =

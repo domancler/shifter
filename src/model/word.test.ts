@@ -24,7 +24,8 @@ describe("export Word", () => {
     expect(xml.match(/rightBrace/g)?.length).toBe(1); // solo il gruppo da 5 giorni
     expect(xml).toContain('w:val="980000"');
     // 4 domeniche interne (08, 15, 22 e 29 è l'ultimo giorno → nessuna riga vuota)
-    expect(xml.match(/<w:p><\/w:p>/g)?.length).toBeGreaterThanOrEqual(5);
+    const empty = /<w:p>(?:<w:pPr>(?:(?!<\/w:pPr>).)*<\/w:pPr>)?<\/w:p>/g;
+    expect(xml.match(empty)?.length).toBe(6);
   });
 
   it("produce uno zip con le parti OOXML e il nome file corretto", async () => {
