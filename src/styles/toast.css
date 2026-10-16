@@ -1,0 +1,120 @@
+
+/* =========================================================
+   TOAST SHIFTER
+   ========================================================= */
+
+.toast-container {
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    left: 50%;
+    z-index: 9999;
+    width: min(420px, calc(100% - 28px));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(-8px) scale(.985);
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.toast-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.toast-leaving {
+    opacity: 0;
+    transform: translateY(-5px) scale(.985);
+}
+
+.toast-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface-secondary);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.toast-success .toast-icon {
+    background: #dff4e7;
+    color: #176b50;
+}
+
+.toast-info .toast-icon {
+    background: #e4edff;
+    color: #285db4;
+}
+
+.toast-warning .toast-icon {
+    background: #fff0d8;
+    color: #99600c;
+}
+
+.toast-error .toast-icon {
+    background: #ffe5e5;
+    color: #b42318;
+}
+
+.toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-title {
+    display: block;
+    margin-bottom: 3px;
+    font-size: .88rem;
+    font-weight: 750;
+}
+
+.toast-message {
+    margin: 0;
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.toast-close {
+    align-self: flex-start;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.toast-close:hover {
+    background: var(--surface-secondary);
+    color: var(--fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        transition: none;
+    }
+}

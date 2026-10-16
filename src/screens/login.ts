@@ -1,42 +1,46 @@
 
 import { el } from "../ui";
 import { go } from "../router";
+import { showToast } from "../toast";
 
 export function loginScreen(): HTMLElement {
-  const status = el("p", {
-    className: "login-status",
-    text: "",
-  });
+    const status = el("p", {
+        className: "login-status",
+        text: "",
+    });
 
-  return el("main", { className: "screen login-screen" }, [
-    el("header", { className: "brand-header login-header" }, [
-      el("div", { className: "login-logo", text: "S" }),
-      el("h1", { text: "Shifter" }),
-      el("p", {
-        className: "muted",
-        text: "Il tuo programmato, senza complicazioni.",
-      }),
-    ]),
+    return el("main", { className: "screen login-screen" }, [
+        el("header", { className: "brand-header login-header" }, [
+            el("div", { className: "login-logo", text: "S" }),
+            el("h1", { text: "Shifter" }),
+            el("p", {
+                className: "muted",
+                text: "Il tuo programmato, senza complicazioni.",
+            }),
+        ]),
 
-    el("section", { className: "login-panel" }, [
-      el("h2", { text: "Bentornato!" }),
-      el("p", {
-        className: "muted",
-        text: "Accedi per gestire il tuo programmato.",
-      }),
+        el("section", { className: "login-panel" }, [
+            el("h2", { text: "Bentornato!" }),
+            el("p", {
+                className: "muted",
+                text: "Accedi per gestire il tuo programmato.",
+            }),
 
-      el("button", {
-        className: "login-google-button",
-        onClick: () => {
-          status.textContent =
-            "L'accesso con Google non è ancora disponibile.";
-        },
-      }, [
-        (() => {
-            const icon = document.createElement("span");
-            icon.className = "login-google-icon";
+            el("button", {
+                className: "login-google-button",
+                onClick: () => {
+                    showToast(
+                        "L'accesso con Google sarà disponibile prossimamente.",
+                        "info",
+                        "Ci siamo quasi!",
+                    );
+                },
+            }, [
+                (() => {
+                    const icon = document.createElement("span");
+                    icon.className = "login-google-icon";
 
-            icon.innerHTML = `
+                    icon.innerHTML = `
                 <svg viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"/>
                 <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.6-5.1c-1.8 1.2-4.1 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44Z"/>
@@ -45,27 +49,27 @@ export function loginScreen(): HTMLElement {
                 </svg>
             `;
 
-            return icon;
-        })(),
-        el("span", { text: "Accedi con Google" }),
-      ]),
+                    return icon;
+                })(),
+                el("span", { text: "Accedi con Google" }),
+            ]),
 
-      status,
+            status,
 
-      el("div", { className: "login-separator" }, [
-        el("span", { text: "oppure" }),
-      ]),
+            el("div", { className: "login-separator" }, [
+                el("span", { text: "oppure" }),
+            ]),
 
-      el("button", {
-        className: "login-continue-button",
-        text: "Continua senza accedere",
-        onClick: () => go("menu"),
-      }),
-    ]),
+            el("button", {
+                className: "login-continue-button",
+                text: "Continua senza accedere",
+                onClick: () => go("menu"),
+            }),
+        ]),
 
-    el("p", {
-      className: "footer-note login-footer",
-      text: "Accesso Google non ancora attivo.",
-    }),
-  ]);
+        el("p", {
+            className: "footer-note login-footer",
+            text: "Accesso Google non ancora attivo.",
+        }),
+    ]);
 }
