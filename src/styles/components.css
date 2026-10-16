@@ -1,5 +1,7 @@
 
-/* Menu principale */
+/* =========================================================
+   MENU PRINCIPALE
+   ========================================================= */
 
 .menu {
     display: flex;
@@ -14,21 +16,27 @@
     width: 100%;
     min-height: 62px;
     padding: 16px;
+
     border: 1px solid var(--border);
     border-radius: 16px;
     background: var(--surface);
     color: var(--fg);
+
     text-align: left;
     font-weight: 650;
     box-shadow: var(--shadow-button);
-    transition: border-color .16s ease, background .16s ease, transform .12s ease;
+
+    transition:
+        border-color .16s ease,
+        background .16s ease,
+        transform .12s ease;
 }
 
 .menu-button::after {
     content: "›";
+    margin-left: 12px;
     color: var(--accent);
     font-size: 1.5rem;
-    margin-left: 12px;
 }
 
 .menu-button:hover,
@@ -41,16 +49,20 @@
     transform: scale(.99);
 }
 
-/* Campi */
+
+/* =========================================================
+   CAMPI E INPUT
+   ========================================================= */
 
 .field {
     display: flex;
     flex-direction: column;
     gap: 7px;
     margin: 14px 0;
+
+    color: var(--fg);
     font-size: .88rem;
     font-weight: 650;
-    color: var(--fg);
 }
 
 .field input,
@@ -59,11 +71,15 @@
     width: 100%;
     min-height: 44px;
     padding: 10px 12px;
+
     border: 1px solid var(--input-border);
     border-radius: 11px;
     background: var(--input-bg);
     color: var(--fg);
-    transition: border-color .15s ease, box-shadow .15s ease;
+
+    transition:
+        border-color .15s ease,
+        box-shadow .15s ease;
 }
 
 .field input:focus,
@@ -78,7 +94,10 @@
     resize: vertical;
 }
 
-/* Pulsanti generali */
+
+/* =========================================================
+   PULSANTI GENERALI
+   ========================================================= */
 
 .primary-button,
 .secondary-button {
@@ -86,7 +105,11 @@
     padding: 11px 15px;
     border-radius: var(--radius-button);
     font-weight: 700;
-    transition: background-color .15s ease, border-color .15s ease, transform .12s ease;
+
+    transition:
+        background-color .15s ease,
+        border-color .15s ease,
+        transform .12s ease;
 }
 
 .primary-button {
@@ -117,7 +140,10 @@
     background: var(--soft);
 }
 
-/* Messaggi di errore */
+
+/* =========================================================
+   MESSAGGI DI ERRORE
+   ========================================================= */
 
 .error {
     color: #b42318;
@@ -128,21 +154,17 @@
     color: #fca5a5;
 }
 
-/* Schede di revisione */
 
-.review-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 18px;
-}
+/* =========================================================
+   SCHEDE DI REVISIONE GENERICHE
+   ========================================================= */
 
 .review-card {
-    background: var(--surface);
-    color: var(--fg);
+    padding: 14px;
     border: 1px solid var(--border);
     border-radius: 15px;
-    padding: 14px;
+    background: var(--surface);
+    color: var(--fg);
     box-shadow: var(--shadow-button);
 }
 
@@ -152,8 +174,8 @@
 }
 
 :root[data-theme="dark"] .review-card.needs-save {
-    background: #3b301c;
     border-color: #b98518;
+    background: #3b301c;
 }
 
 .review-card-heading {
@@ -183,26 +205,34 @@
     margin-top: 5px;
 }
 
-/* Barra del tema globale */
+
+/* =========================================================
+   INTERRUTTORE TEMA GLOBALE
+   ========================================================= */
 
 .global-theme-toggle {
     position: fixed;
     top: max(14px, env(safe-area-inset-top));
     right: 16px;
     z-index: 1000;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     width: 42px;
     height: 42px;
     padding: 0;
+
     border: 1px solid var(--border);
     border-radius: 50%;
     background: var(--surface);
     color: var(--fg);
+
     font-size: 1.2rem;
     line-height: 1;
     box-shadow: var(--shadow);
+
     transition:
         background-color .15s ease,
         border-color .15s ease,
@@ -210,10 +240,644 @@
 }
 
 .global-theme-toggle:hover {
-    background: var(--soft);
     border-color: var(--accent);
+    background: var(--soft);
 }
 
 .global-theme-toggle:active {
     transform: scale(.92);
+}
+
+
+/* =========================================================
+   TOOLBAR FLOTTANTE DELLA REVIEW
+   ========================================================= */
+
+.review-floating-toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    min-height: 60px;
+    padding: max(8px, env(safe-area-inset-top)) 16px 8px;
+
+    border-bottom: 2px solid var(--accent);
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .22);
+
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+
+    transition:
+        opacity .08s linear,
+        background-color .2s ease,
+        border-color .2s ease;
+}
+
+.review-toolbar-back {
+    display: inline-flex;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+    padding: 0;
+
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg);
+    font-size: 1.7rem;
+}
+
+.review-toolbar-back:hover {
+    background: var(--soft);
+}
+
+.review-toolbar-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+
+    font-size: .98rem;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.review-theme-toggle {
+    position: static;
+    display: inline-flex;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+    padding: 0;
+
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background: var(--soft);
+    color: var(--fg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.review-theme-toggle:hover {
+    border-color: var(--accent);
+    background: var(--soft);
+}
+
+
+/* =========================================================
+   PULSANTE TORNA ALL'INIZIO
+   ========================================================= */
+
+.review-back-to-top {
+    position: fixed;
+    right: 20px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 1050;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 48px;
+    height: 48px;
+    padding: 0;
+
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .30);
+
+    font-size: 1.7rem;
+    line-height: 1;
+
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+
+    transition:
+        background-color .15s ease,
+        border-color .15s ease,
+        transform .15s ease;
+}
+
+.review-back-to-top:hover {
+    border-color: var(--accent);
+    background: var(--surface);
+    color: var(--fg);
+}
+
+.review-back-to-top:active {
+    transform: scale(.92);
+}
+
+.review-screen > .global-theme-toggle {
+    transition: opacity .08s linear;
+}
+
+
+/* =========================================================
+   INTESTAZIONE DEL PERIODO
+   ========================================================= */
+
+.review-period {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 8px 0 16px;
+
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+.review-period-days {
+    flex-shrink: 0;
+    margin-left: auto;
+
+    color: var(--fg);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.review-toolbar-review {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.review-toolbar-review .primary-button {
+    width: 100%;
+}
+
+
+/* =========================================================
+   ELENCO COMPATTO DELLE GIORNATE
+   ========================================================= */
+
+.review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+}
+
+.review-day-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 22px 16px;
+    align-items: center;
+    gap: 8px;
+
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--fg);
+
+    text-align: left;
+    cursor: pointer;
+
+    transition:
+        background-color .15s ease,
+        border-color .15s ease,
+        transform .1s ease;
+}
+
+.review-day-row:hover {
+    border-color: var(--accent);
+    background: var(--soft);
+}
+
+.review-day-row:active {
+    transform: scale(.99);
+}
+
+.review-day-date {
+    min-width: 0;
+    font-size: .88rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.review-day-entry {
+    justify-self: end;
+    font-size: .9rem;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.review-day-entry.is-empty {
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 500;
+}
+
+.review-day-note {
+    color: var(--accent);
+    font-size: 1rem;
+    text-align: center;
+}
+
+.review-day-arrow {
+    color: var(--muted);
+    font-size: 1.4rem;
+    text-align: right;
+}
+
+/* Separazione tra domenica e lunedì */
+
+.review-list .review-day-row.review-week-start {
+    margin-top: 14px;
+    border-top: 2px solid var(--accent);
+}
+
+
+/* =========================================================
+   FINESTRA MODALE DI MODIFICA
+   ========================================================= */
+
+.review-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding:
+        max(12px, env(safe-area-inset-top))
+        12px
+        max(12px, env(safe-area-inset-bottom));
+
+    background: rgba(0, 0, 0, .58);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+.review-modal {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    max-width: 520px;
+    max-height: 92vh;
+    max-height: 92dvh;
+    overflow: hidden;
+
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .32);
+
+    animation: review-modal-enter .16s ease-out;
+}
+
+@keyframes review-modal-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.review-modal-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.review-modal-heading h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    text-transform: capitalize;
+}
+
+.review-modal-close {
+    display: inline-flex;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+    padding: 0;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--soft);
+    color: var(--fg);
+
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.review-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding: 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.review-modal-content h3 {
+    margin: 4px 0 0;
+    font-size: .9rem;
+    font-weight: 750;
+}
+
+.review-choice-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.review-leave-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.review-shift-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.review-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 6px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--soft);
+    color: var(--fg);
+
+    font-size: .92rem;
+    font-weight: 650;
+    cursor: pointer;
+
+    transition:
+        background-color .15s ease,
+        border-color .15s ease,
+        transform .1s ease;
+}
+
+.review-choice:hover {
+    border-color: var(--accent);
+}
+
+.review-choice:active {
+    transform: scale(.97);
+}
+
+.review-choice.is-selected {
+    border: 2px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+}
+
+.review-modal-notes {
+    width: 100%;
+    min-height: 76px;
+    padding: 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--soft);
+    color: var(--fg);
+
+    font: inherit;
+    font-size: .9rem;
+    resize: vertical;
+}
+
+.review-modal-notes:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.review-clear-day {
+    align-self: flex-start;
+    margin-top: 2px;
+}
+
+.review-modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.review-apply {
+    width: 100%;
+    min-height: 46px;
+}
+
+
+/* =========================================================
+   OPERAZIONI DELLA REVIEW
+   ========================================================= */
+
+.review-actions {
+    margin: 18px 0 20px;
+}
+
+.review-actions-title {
+    margin: 0 0 10px;
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.review-actions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.review-actions-secondary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.review-actions-primary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.review-actions-primary .review-action-button {
+    width: 100%;
+}
+
+.review-action-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    min-width: 0;
+    min-height: 60px;
+    padding: 6px 4px;
+
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #fff;
+
+    text-align: center;
+    cursor: pointer;
+
+    transition:
+        filter .15s ease,
+        transform .1s ease;
+}
+
+.review-action-button:hover {
+    filter: brightness(1.12);
+}
+
+.review-action-button:active {
+    transform: scale(.98);
+}
+
+.review-action-icon {
+    font-size: 1.2rem;
+    font-weight: 750;
+    line-height: 1;
+}
+
+.review-action-label {
+    font-size: .74rem;
+    font-weight: 650;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+/* Controllo turni — viola */
+
+.review-action-check {
+    background: #7C3AED;
+    border-color: #8B5CF6;
+}
+
+/* Google Calendar — verde */
+
+.review-action-calendar {
+    background: #34A853;
+    border-color: #2D9448;
+}
+
+/* Microsoft Word — blu */
+
+.review-action-word {
+    background: #185abd;
+    border-color: #2b7cd3;
+}
+
+/* Backup — arancione */
+
+.review-action-backup {
+    background: #b45309;
+    border-color: #d97706;
+}
+
+
+/* =========================================================
+   ADATTAMENTI PER TELEFONI MOLTO PICCOLI
+   ========================================================= */
+
+@media (max-width: 360px) {
+    .review-day-row {
+        grid-template-columns: minmax(0, 1fr) auto 18px 12px;
+        gap: 5px;
+        padding: 9px;
+    }
+
+    .review-day-date {
+        font-size: .8rem;
+    }
+
+    .review-day-entry {
+        font-size: .84rem;
+    }
+
+    .review-modal-content {
+        padding: 12px;
+    }
+
+    .review-choice-grid {
+        gap: 6px;
+    }
+
+    .review-actions-grid {
+        gap: 5px;
+    }
+
+    .review-actions-secondary {
+        gap: 5px;
+    }
+
+    .review-action-button {
+        min-height: 54px;
+        padding: 5px 2px;
+        gap: 4px;
+        border-radius: 8px;
+    }
+
+    .review-action-icon {
+        font-size: 1.05rem;
+    }
+
+    .review-action-label {
+        font-size: .65rem;
+    }
+}
+
+
+/* =========================================================
+   ACCESSIBILITÀ: MOVIMENTO RIDOTTO
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .review-modal {
+        animation: none;
+    }
+
+    .review-day-row,
+    .review-choice,
+    .review-action-button {
+        transition: none;
+    }
 }

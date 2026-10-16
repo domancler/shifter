@@ -26,11 +26,13 @@ function applyTheme(theme: Theme): void {
   localStorage.setItem(THEME_KEY, theme);
 }
 
-function createThemeToggle(): HTMLButtonElement {
+export function createThemeToggle(
+  className = "global-theme-toggle",
+): HTMLButtonElement {
   const button = document.createElement("button");
 
   button.type = "button";
-  button.className = "global-theme-toggle";
+  button.className = className;
   button.addEventListener("click", () => {
     const nextTheme: Theme =
       document.documentElement.dataset.theme === "dark"
@@ -86,8 +88,10 @@ export function go(name: ScreenName): void {
 
   root.replaceChildren(renderer());
 
-  // L'icona viene aggiunta a ogni schermata.
-  root.append(createThemeToggle());
+  // Nella revisione il tema è integrato nella toolbar superiore.
+  if (name !== "review") {
+    root.append(createThemeToggle());
+  }
 
   window.scrollTo(0, 0);
 }
