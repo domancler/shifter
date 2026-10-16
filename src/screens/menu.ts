@@ -1,3 +1,4 @@
+
 import { el } from "../ui";
 import { go, type ScreenName } from "../router";
 
@@ -11,7 +12,18 @@ const ITEMS: { label: string; target: ScreenName }[] = [
 
 export function menuScreen(): HTMLElement {
   return el("main", { className: "screen" }, [
-    el("h1", { text: "Turni Calendar" }),
+    el("header", { className: "brand-header" }, [
+      el("p", {
+        className: "eyebrow",
+        text: "PROGRAMMAZIONE TURNI",
+      }),
+      el("h1", { text: "Shifter" }),
+      el("p", {
+        className: "muted",
+        text: "Il tuo programmato, senza complicazioni.",
+      }),
+    ]),
+
     el(
       "div",
       { className: "menu" },
@@ -23,5 +35,10 @@ export function menuScreen(): HTMLElement {
         }),
       ),
     ),
+
+    el("p", {
+      className: "footer-note",
+      text: "Prototipo in sviluppo · i dati non vengono ancora salvati.",
+    }),
   ]);
 }

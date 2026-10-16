@@ -7,12 +7,22 @@ export const LEAVE_CODES = ["CO", "FS", "ROL", "RS"] as const;
 export type LeaveCode = (typeof LEAVE_CODES)[number];
 
 export type Entry =
-  | { type: "shift"; code: ShiftCode }
+  | { type: "shift"; code: ShiftCode; start: string; end: string }
   | { type: "leave"; code: LeaveCode }
   | null;
 
 export interface Day {
-  date: string; // "YYYY-MM-DD": la colonna del programmato
+  date: string;
   entry: Entry;
   note: string;
+  calendarRef?: { provider: "google"; eventId: string; etag?: string; updated?: string };
+}
+
+export interface Schedule {
+  formatVersion: 1;
+  app: "turni-calendar";
+  exportedAt: string;
+  timezone: "Europe/Rome";
+  period: { label: string; start: string; end: string };
+  days: Day[];
 }
