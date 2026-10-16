@@ -4,3 +4,108 @@
 @import "./styles/wizard.css";
 @import "./styles/responsive.css";
 @import "./styles/toast.css";
+
+
+/* Finestra di conferma uscita */
+.exit-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.exit-dialog {
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+}
+
+.exit-dialog-heading {
+    margin: 0 0 14px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.exit-dialog-message {
+    margin: 0 0 24px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.exit-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.exit-dialog-actions button {
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.exit-dialog-stay {
+    border: 1px solid var(--border);
+    background: var(--surface-secondary);
+    color: var(--fg);
+}
+
+.exit-dialog-confirm {
+    border: 1px solid #b93838;
+    background: #b93838;
+    color: #ffffff;
+}
+
+.exit-dialog-confirm:hover {
+    background: #982d2d;
+    border-color: #982d2d;
+}
+
+@media (max-width: 420px) {
+    .exit-dialog {
+        padding: 20px;
+    }
+
+    .exit-dialog-actions {
+        flex-direction: column-reverse;
+    }
+
+    .exit-dialog-actions button {
+        width: 100%;
+    }
+}
+
+.exit-dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.exit-dialog-heading h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
+
+.exit-dialog-close {
+    flex-shrink: 0;
+}

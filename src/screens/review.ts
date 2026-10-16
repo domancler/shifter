@@ -2,7 +2,15 @@ import { exportBackup } from "../model/backup";
 import { showToast } from "../toast";
 import { el } from "../ui";
 import { go, createThemeToggle } from "../router";
-import { getActiveSchedule, setActiveSchedule } from "../model/session";
+import {
+  getActiveSchedule,
+  setActiveSchedule,
+  getScheduleSource,
+  markScheduleSaved,
+  isScheduleSaved,
+  markScheduleUnsaved,
+  setWizardIndex,
+} from "../model/session";
 import {
   entryForLeave,
   entryForShift,
@@ -59,6 +67,90 @@ function countCompiledDays(
 ): number {
   return days.filter((day) => day.entry !== null).length;
 }
+
+
+function returnToMenuSafely(): void {
+  const schedule = getActiveSchedule();
+
+  if (!schedule || isScheduleSaved()) {
+    setActiveSchedule(null);
+    setWizardIndex(0);
+    go("menu");
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "exit-dialog-overlay";
+
+  const dialog = document.createElement("section");
+  dialog.className = "exit-dialog";
+  dialog.setAttribute("role", "alertdialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "exit-dialog-title");
+  dialog.setAttribute("aria-describedby", "exit-dialog-description");
+
+  const heading = el("div", {
+    className: "exit-dialog-heading",
+  }, [
+    el("h2", {
+      text: "Programma non salvato",
+    }),
+    button("×", "exit-dialog-close", closeDialog),
+  ]);
+
+  const message = el("p", {
+    className: "exit-dialog-message",
+    text: "Se torni al menu, perderai il programma temporaneo e tutte le modifiche non salvate. Vuoi continuare?",
+  });
+  message.id = "exit-dialog-description";
+
+  const title = heading.querySelector("h2");
+  if (title) title.id = "exit-dialog-title";
+
+  const stayButton = button(
+    "Resta qui",
+    "exit-dialog-stay",
+    closeDialog,
+  );
+
+  const exitButton = button(
+    "Esci senza salvare",
+    "exit-dialog-confirm",
+    () => {
+      closeDialog();
+      setActiveSchedule(null);
+      setWizardIndex(0);
+      go("menu");
+    },
+  );
+
+  const footer = el("div", {
+    className: "exit-dialog-actions",
+  }, [stayButton, exitButton]);
+
+  dialog.append(heading, message, footer);
+  overlay.append(dialog);
+
+  function closeDialog(): void {
+    window.removeEventListener("keydown", handleKeyDown);
+    overlay.remove();
+  }
+
+  function handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      closeDialog();
+    }
+  }
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeDialog();
+  });
+
+  window.addEventListener("keydown", handleKeyDown);
+  document.body.append(overlay);
+  stayButton.focus();
+}
+
 
 export function reviewScreen(): HTMLElement {
   const schedule = getActiveSchedule();
@@ -212,6 +304,7 @@ export function reviewScreen(): HTMLElement {
           latest.days[index].note = draftNote;
 
           setActiveSchedule(latest);
+          markScheduleUnsaved();
 
           const rowState = rowStates[index];
           rowState.entry.textContent =
@@ -313,7 +406,19 @@ export function reviewScreen(): HTMLElement {
   const screen = el("main", {
     className: "screen review-screen",
   }, [
-    button("← Torna al wizard", "back", () => go("wizard")),
+    button(
+      getScheduleSource() === "import"
+        ? "← Torna al menu"
+        : "← Torna al wizard",
+      "back",
+      () => {
+        if (getScheduleSource() === "import") {
+          returnToMenuSafely();
+        } else {
+          go("wizard");
+        }
+      },
+    ),
 
     el("h1", { text: "Review" }),
 
@@ -388,6 +493,7 @@ export function reviewScreen(): HTMLElement {
 
                 window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+                markScheduleSaved();
                 showToast(
                   "Il backup JSON è stato generato e il download è stato avviato.",
                   "success",
@@ -426,8 +532,10 @@ export function reviewScreen(): HTMLElement {
   const floatingToolbar = document.createElement("div");
   floatingToolbar.className = "review-floating-toolbar";
 
-  const backButton = button("←", "review-toolbar-back", () =>
-    go("menu"),
+  const backButton = button(
+    "←",
+    "review-toolbar-back",
+    returnToMenuSafely,
   );
   backButton.setAttribute("aria-label", "Torna al menu");
   backButton.title = "Torna al menu";

@@ -1,5 +1,6 @@
 
 import { el } from "../ui";
+import { openBackupPicker } from "./import";
 import { go, type ScreenName } from "../router";
 
 function menuAction(
@@ -125,12 +126,26 @@ export function menuScreen(): HTMLElement {
         text: "Importazioni",
       }),
 
-      menuAction(
-        "home-action home-action-import",
-        "↑",
-        "Importa backup",
-        "Carica un programmato salvato.",
-        "import",
+      el(
+        "button",
+        {
+          className: "home-action home-action-import",
+          onClick: openBackupPicker,
+        },
+        [
+          el("span", { className: "home-action-icon", text: "↑" }),
+          el("span", { className: "home-action-content" }, [
+            el("span", {
+              className: "home-action-title",
+              text: "Importa backup",
+            }),
+            el("span", {
+              className: "home-action-description",
+              text: "Carica un programmato salvato.",
+            }),
+          ]),
+          el("span", { className: "home-action-arrow", text: "›" }),
+        ],
       ),
     ]),
   ]);
