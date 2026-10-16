@@ -1,0 +1,64 @@
+
+/* Struttura delle schermate */
+
+.screen {
+    width: min(100%, 760px);
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    color: var(--fg);
+}
+
+/* Intestazione principale */
+
+.brand-header {
+    padding: 20px 4px 26px;
+}
+
+.brand-header h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    letter-spacing: -.05em;
+}
+
+/* Nota a fondo schermata */
+
+.footer-note {
+    text-align: center;
+    color: var(--muted);
+    font-size: .78rem;
+    margin-top: 28px;
+}
+
+/* Pulsante per tornare indietro */
+
+.back {
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--accent);
+    padding: 8px 10px 8px 0;
+    font-weight: 700;
+    transition: color .15s ease, background .15s ease;
+}
+
+.back:hover {
+    color: var(--accent-dark);
+}
+
+/* Pannelli e contenitori */
+
+.panel {
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    transition: background-color .2s ease, border-color .2s ease;
+}
+
+.panel p {
+    color: var(--muted);
+}

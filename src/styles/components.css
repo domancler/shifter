@@ -1,0 +1,219 @@
+
+/* Menu principale */
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 62px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--fg);
+    text-align: left;
+    font-weight: 650;
+    box-shadow: var(--shadow-button);
+    transition: border-color .16s ease, background .16s ease, transform .12s ease;
+}
+
+.menu-button::after {
+    content: "›";
+    color: var(--accent);
+    font-size: 1.5rem;
+    margin-left: 12px;
+}
+
+.menu-button:hover,
+.menu-button:focus-visible {
+    border-color: var(--accent);
+    background: var(--soft);
+}
+
+.menu-button:active {
+    transform: scale(.99);
+}
+
+/* Campi */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 14px 0;
+    font-size: .88rem;
+    font-weight: 650;
+    color: var(--fg);
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 11px;
+    background: var(--input-bg);
+    color: var(--fg);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+    outline: none;
+}
+
+.field textarea {
+    resize: vertical;
+}
+
+/* Pulsanti generali */
+
+.primary-button,
+.secondary-button {
+    min-height: 44px;
+    padding: 11px 15px;
+    border-radius: var(--radius-button);
+    font-weight: 700;
+    transition: background-color .15s ease, border-color .15s ease, transform .12s ease;
+}
+
+.primary-button {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 3px 9px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.primary-button:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+}
+
+.primary-button:active,
+.secondary-button:active {
+    transform: scale(.98);
+}
+
+.secondary-button {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+}
+
+.secondary-button:hover {
+    border-color: var(--accent);
+    background: var(--soft);
+}
+
+/* Messaggi di errore */
+
+.error {
+    color: #b42318;
+    font-size: .88rem;
+}
+
+:root[data-theme="dark"] .error {
+    color: #fca5a5;
+}
+
+/* Schede di revisione */
+
+.review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.review-card {
+    background: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: 14px;
+    box-shadow: var(--shadow-button);
+}
+
+.review-card.needs-save {
+    border-color: #e3a008;
+    background: #fffdf5;
+}
+
+:root[data-theme="dark"] .review-card.needs-save {
+    background: #3b301c;
+    border-color: #b98518;
+}
+
+.review-card-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    text-transform: capitalize;
+}
+
+.review-date {
+    color: var(--muted);
+    font-size: .8rem;
+    white-space: nowrap;
+}
+
+.review-card .field {
+    margin: 12px 0;
+}
+
+.review-card .secondary-button {
+    width: 100%;
+}
+
+.review-card > .muted {
+    display: block;
+    margin-top: 5px;
+}
+
+/* Barra del tema globale */
+
+.global-theme-toggle {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    right: 16px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--fg);
+    font-size: 1.2rem;
+    line-height: 1;
+    box-shadow: var(--shadow);
+    transition:
+        background-color .15s ease,
+        border-color .15s ease,
+        transform .15s ease;
+}
+
+.global-theme-toggle:hover {
+    background: var(--soft);
+    border-color: var(--accent);
+}
+
+.global-theme-toggle:active {
+    transform: scale(.92);
+}

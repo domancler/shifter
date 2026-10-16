@@ -1,0 +1,77 @@
+
+/* Schermi piccoli */
+
+@media (max-width: 360px) {
+    .screen {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .wizard-top {
+        gap: 8px;
+    }
+
+    .wizard-top h2 {
+        font-size: 1rem;
+    }
+
+    .wizard-progress strong {
+        font-size: .75rem;
+    }
+
+    .choice-grid,
+    .choice-grid-night,
+    .choice-grid-leave {
+        gap: 6px;
+    }
+
+    .choice-button {
+        font-size: .88rem;
+        min-height: 44px;
+    }
+
+    .wizard-actions {
+        gap: 8px;
+    }
+
+    .wizard-actions button {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+}
+
+/* Schermi medi e grandi */
+
+@media (min-width: 600px) {
+    .screen {
+        padding: 30px 24px 48px;
+    }
+
+    .brand-header {
+        padding-top: 28px;
+    }
+
+    .panel {
+        padding: 24px;
+    }
+
+    .review-card {
+        padding: 18px;
+    }
+}
+
+/* Accessibilità: riduzione delle animazioni */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

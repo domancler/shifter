@@ -1,0 +1,199 @@
+
+/* Intestazione e avanzamento del wizard */
+
+.wizard-top {
+    display: block;
+    margin-bottom: 22px;
+}
+
+.wizard-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+}
+
+.wizard-progress-labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.wizard-progress strong,
+.wizard-progress-labels strong {
+    font-size: .82rem;
+    font-weight: 750;
+    text-align: left;
+    white-space: nowrap;
+    color: var(--accent);
+}
+
+.wizard-day-count {
+    color: var(--muted);
+    font-size: .8rem;
+    white-space: nowrap;
+}
+
+.progress-track {
+    height: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--progress-bg);
+    margin: 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: inherit;
+    transition: width .2s ease;
+}
+
+/* Data completa, esterna alla card */
+
+.wizard-date {
+    margin: 8px 0 18px;
+    font-size: 1.5rem;
+    line-height: 1.3;
+    text-transform: capitalize;
+}
+
+/* Titoli delle sezioni del wizard */
+
+.panel.wizard h3 {
+    margin-top: 22px;
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .065em;
+    text-transform: uppercase;
+}
+
+.panel.wizard h3:first-of-type {
+    margin-top: 0;
+}
+
+/* Griglie dei giustificativi e dei turni */
+
+.choice-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.choice-grid-night {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-grid-leave {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Pulsanti dei turni */
+
+.choice-button {
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 5px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-button);
+    background: var(--surface-secondary);
+    color: var(--fg);
+    font-size: .94rem;
+    font-weight: 750;
+    box-shadow: var(--shadow-button);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        transform 100ms ease,
+        background-color 100ms ease,
+        border-color 100ms ease,
+        color 100ms ease,
+        box-shadow 100ms ease;
+}
+
+.choice-button:hover,
+.choice-button:focus-visible {
+    background: var(--soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.choice-button:active {
+    transform: scale(.94);
+}
+
+/* Conferma visiva della selezione */
+
+.choice-button.choice-selected {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent);
+    transform: scale(.96);
+}
+
+/* Pulsanti dei giustificativi */
+
+.leave-choice {
+    background: var(--leave-bg);
+    border-color: transparent;
+    color: var(--leave-fg);
+    font-weight: 800;
+}
+
+.leave-choice:hover,
+.leave-choice:focus-visible {
+    background: var(--soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Pulsanti di navigazione del wizard */
+
+.wizard-actions,
+.review-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+}
+
+.wizard-actions button,
+.review-toolbar button {
+    flex: 1;
+}
+
+.wizard-actions .secondary-button:first-child {
+    color: var(--muted);
+    background: var(--surface);
+}
+
+.wizard-actions .secondary-button:last-child {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 3px 9px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.wizard-actions .secondary-button:last-child:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+}
+
+/* Rispetta le preferenze di movimento ridotto */
+
+@media (prefers-reduced-motion: reduce) {
+    .choice-button {
+        transition: none;
+    }
+
+    .choice-button.choice-selected {
+        transform: none;
+    }
+}
