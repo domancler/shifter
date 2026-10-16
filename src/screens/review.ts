@@ -1,8 +1,8 @@
-
-import { exportBackup } from "../model/backup";
-import { showToast } from "../toast";
 import { el } from "../ui";
+import { showToast } from "../toast";
+import { exportBackup } from "../model/backup";
 import { go, createThemeToggle } from "../router";
+import { buildWordBlob, wordFileName } from "../model/word";
 import {
   getActiveSchedule,
   setActiveSchedule,
@@ -539,10 +539,34 @@ export function reviewScreen(): HTMLElement {
             "W",
             "Word",
             "review-action-word",
-            () => showToast(
-              "L'esportazione Word sarà disponibile in un prossimo aggiornamento.",
-              "info",
-            ),
+            async () => {
+              const currentSchedule = getActiveSchedule();
+
+              if (!currentSchedule) {
+                showToast("Non c'è nessun programmato da esportare.", "warning");
+                return;
+              }
+
+              try {
+                const blob = await buildWordBlob(currentSchedule);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+
+                link.href = url;
+                link.download = wordFileName(currentSchedule);
+
+                document.body.append(link);
+                link.click();
+                link.remove();
+
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                showToast("Il documento Word è stato generato e il download è stato avviato.", "success");
+              } catch (error) {
+                console.error("Errore durante l'esportazione Word:", error);
+                showToast("Non è stato possibile generare il Word. Riprova.", "error");
+              }
+            },
           ),
 
           actionButton(
