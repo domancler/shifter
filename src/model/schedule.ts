@@ -44,9 +44,9 @@ export function formatShortDate(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
   return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit" }).format(new Date(year, month - 1, day, 12));
 }
-export function formatShiftForReview(entry: Entry, columnDate: string): string {
+
+export function formatShiftForReview(entry: Entry, _columnDate: string): string {
   if (!entry) return "—";
   if (entry.type === "leave") return entry.code;
-  // Il 23-07 è mostrato sulla colonna di fine turno: la data coincide con columnDate.
-  return `${entry.code}`;
+  return entry.code;
 }

@@ -1,3 +1,5 @@
+import { exportBackup } from "../model/backup";
+import { showToast } from "../toast";
 import { el } from "../ui";
 import { go, createThemeToggle } from "../router";
 import { getActiveSchedule, setActiveSchedule } from "../model/session";
@@ -334,8 +336,9 @@ export function reviewScreen(): HTMLElement {
             "✓",
             "Controllo turni",
             "review-action-check",
-            () => window.alert(
-              "Il controllo dei turni sarà implementato in seguito.",
+            () => showToast(
+              "Il controllo dei turni sarà disponibile in un prossimo aggiornamento.",
+              "info",
             ),
           ),
 
@@ -343,19 +346,63 @@ export function reviewScreen(): HTMLElement {
             "W",
             "Word",
             "review-action-word",
-            () => window.alert(
-              "L'esportazione Word sarà implementata in seguito.",
+            () => showToast(
+              "L'esportazione Word sarà disponibile in un prossimo aggiornamento.",
+              "info",
             ),
           ),
+
 
           actionButton(
             "↓",
             "Backup",
             "review-action-backup",
-            () => window.alert(
-              "L'esportazione del backup sarà implementata in seguito.",
-            ),
+            () => {
+              const currentSchedule = getActiveSchedule();
+
+              if (!currentSchedule) {
+                showToast(
+                  "Non c'è nessun programmato da esportare.",
+                  "warning",
+                );
+                return;
+              }
+
+              try {
+                const json = exportBackup(currentSchedule);
+                const blob = new Blob([json], {
+                  type: "application/json;charset=utf-8",
+                });
+
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+
+                const month = currentSchedule.period.start.slice(0, 7);
+
+                link.href = url;
+                link.download = `Shifter_backup_${month}.json`;
+
+                document.body.append(link);
+                link.click();
+                link.remove();
+
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                showToast(
+                  "Il backup JSON è stato generato e il download è stato avviato.",
+                  "success",
+                );
+              } catch (error) {
+                console.error("Errore durante l'esportazione del backup:", error);
+
+                showToast(
+                  "Non è stato possibile esportare il backup. Riprova.",
+                  "error",
+                );
+              }
+            },
           ),
+
         ]),
 
         el("div", { className: "review-actions-primary" }, [
@@ -363,8 +410,9 @@ export function reviewScreen(): HTMLElement {
             "▦",
             "Inserisci nel Calendar",
             "review-action-calendar",
-            () => window.alert(
-              "L'inserimento su Google Calendar sarà implementato in seguito.",
+            () => showToast(
+              "L'integrazione con Google Calendar sarà disponibile in un prossimo aggiornamento.",
+              "info",
             ),
           ),
         ]),
