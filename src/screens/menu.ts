@@ -2,6 +2,8 @@
 import { el } from "../ui";
 import { openBackupPicker } from "./import";
 import { go, type ScreenName } from "../router";
+import { disconnectGoogle, getConnectedCalendar } from "../calendar/googleClient";
+import { connectFromUi } from "./googleConnect";
 
 function menuAction(
   className: string,
@@ -33,6 +35,41 @@ function menuAction(
   );
 }
 
+function googleStatusBar(): HTMLElement {
+  const calendar = getConnectedCalendar();
+
+  const button = el("button", {
+    className: "google-status-button",
+    text: calendar ? "Esci" : "Collegati",
+    onClick: () => {
+      if (calendar) {
+        disconnectGoogle();
+        go("login");
+        return;
+      }
+
+      void connectFromUi(button).then((ok) => {
+        if (ok) go("menu");
+      });
+    },
+  });
+
+  return el(
+    "section",
+    { className: `google-status${calendar ? " is-connected" : ""}` },
+    [
+      el("span", { className: "google-status-dot" }),
+      el("span", {
+        className: "google-status-text",
+        text: calendar
+          ? `Google Calendar collegato · ${calendar.name}`
+          : "Google Calendar non collegato",
+      }),
+      button,
+    ],
+  );
+}
+
 export function menuScreen(): HTMLElement {
   return el("main", { className: "screen home-screen" }, [
     el("header", { className: "brand-header home-header" }, [
@@ -46,6 +83,8 @@ export function menuScreen(): HTMLElement {
         text: "Il tuo programmato, senza complicazioni.",
       }),
     ]),
+
+    googleStatusBar(),
 
     el("section", { className: "home-section" }, [
       el("h2", {
