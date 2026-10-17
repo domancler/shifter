@@ -25,4 +25,6 @@ export interface CalendarProvider {
    * estremi inclusi. Gli eventi senza marcatore non vengono mai restituiti.
    */
   listMarkedEvents(fromDate: string, toDate: string): Promise<RemoteEvent[]>;
+
+  getEventById(eventId: string): Promise<RemoteEvent | null>;
 }

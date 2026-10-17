@@ -3,6 +3,12 @@ import { showToast } from "../toast";
 import { exportBackup } from "../model/backup";
 import { go, createThemeToggle } from "../router";
 import { buildWordBlob, wordFileName } from "../model/word";
+import { saveScheduleToGoogle } from "../calendar/saveSchedule";
+import {
+  connectGoogle,
+  describeError,
+  isGoogleConnected,
+} from "../calendar/googleClient";
 import {
   getActiveSchedule,
   setActiveSchedule,
@@ -21,8 +27,10 @@ import {
 import {
   LEAVE_CODES,
   SHIFT_CODES,
+  type Day,
   type Entry,
   type LeaveCode,
+  type Schedule,
   type ShiftCode,
 } from "../model/types";
 
@@ -68,6 +76,12 @@ function entryLabel(entry: Entry): string {
 function countCompiledDays(days: { entry: Entry }[]): number {
   return days.filter((day) => day.entry !== null).length;
 }
+
+
+function getUncompiledDays(schedule: Schedule): Day[] {
+  return schedule.days.filter((day) => day.entry === null);
+}
+
 
 function returnToMenuSafely(): void {
   const schedule = getActiveSchedule();
@@ -491,6 +505,100 @@ export function reviewScreen(): HTMLElement {
     });
   });
 
+  const calendarAction = actionButton(
+    "▦",
+    "Inserisci nel Calendar",
+    "review-action-calendar",
+    async () => {
+      const currentSchedule = getActiveSchedule();
+
+      if (!currentSchedule) {
+        showToast(
+          "Non c'è nessun programmato da salvare.",
+          "warning",
+        );
+        return;
+      }
+
+      calendarAction.disabled = true;
+
+      try {
+        if (!isGoogleConnected()) {
+          const calendar = await connectGoogle();
+
+          showToast(
+            `Collegato a ${calendar.name}.`,
+            "success",
+            "Google Calendar collegato",
+          );
+        }
+
+
+        const missingDays = getUncompiledDays(currentSchedule);
+
+        if (missingDays.length > 0) {
+          const dates = missingDays
+            .map((day) =>
+              formatDate(day.date, {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+              }),
+            )
+            .map((date) => date.charAt(0).toUpperCase() + date.slice(1));
+
+          const message = [
+            `Attenzione: ci sono ${missingDays.length} giornate senza turno o giustificativo.`,
+            "",
+            ...dates.map((date) => `• ${date}`),
+            "",
+            "Vuoi salvare comunque il programma?",
+          ].join("\n");
+
+          if (!window.confirm(message)) {
+            showToast(
+              "Salvataggio annullato. Completa le giornate mancanti e riprova.",
+              "info",
+            );
+            return;
+          }
+        }
+
+        showToast(
+          "Preparazione del salvataggio su Google Calendar…",
+          "info",
+        );
+
+        
+        const result = await saveScheduleToGoogle(currentSchedule);
+
+
+        if (result === null) {
+          showToast("Salvataggio annullato.", "info");
+          return;
+        }
+
+        setActiveSchedule(currentSchedule);
+        markScheduleSaved();
+
+        showToast(
+          `Salvataggio completato. Creati: ${result.created}, aggiornati: ${result.updated}, rimossi: ${result.deleted}.`,
+          "success",
+        );
+      } catch (error) {
+        console.error(
+          "Errore durante il salvataggio su Google Calendar:",
+          error,
+        );
+
+        markScheduleUnsaved();
+        showToast(describeError(error), "error");
+      } finally {
+        calendarAction.disabled = false;
+      }
+    },
+  );
+
   const screen = el("main", {
     className: "screen review-screen",
   }, [
@@ -629,15 +737,7 @@ export function reviewScreen(): HTMLElement {
         ]),
 
         el("div", { className: "review-actions-primary" }, [
-          actionButton(
-            "▦",
-            "Inserisci nel Calendar",
-            "review-action-calendar",
-            () => showToast(
-              "L'integrazione con Google Calendar sarà disponibile in un prossimo aggiornamento.",
-              "info",
-            ),
-          ),
+          calendarAction,
         ]),
       ]),
     ]),

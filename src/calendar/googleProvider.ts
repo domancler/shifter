@@ -83,4 +83,26 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
     return events;
   }
+
+  async getEventById(eventId: string): Promise<RemoteEvent | null> {
+    try {
+      const event = await googleFetch<GoogleEvent>(
+        `/calendars/primary/events/${encodeURIComponent(eventId)}`,
+      );
+
+      if (event.status === "cancelled") return null;
+
+      return toRemoteEvent(event);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "status" in error &&
+        error.status === 404
+      ) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
 }
