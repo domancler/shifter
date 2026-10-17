@@ -21,9 +21,10 @@ describe("export Word", () => {
     expect(xml).toContain("Agente Dell’Erba Giovanna");
     expect(xml).toContain("02.11         15-23");
     expect(xml).toContain("05.11         RS");
-    expect(xml.match(/rightBrace/g)?.length).toBe(1); // solo il gruppo da 5 giorni
+    expect(xml.match(/rightBrace/g)?.length).toBe(1); // graffa solo sul gruppo da 5 giorni
+    expect(xml.match(/ESIGENZA/g)?.length).toBe(2);    // + etichetta sola sul giorno singolo (20.11)
     expect(xml).toContain('w:val="980000"');
-    // 4 domeniche interne (08, 15, 22 e 29 è l'ultimo giorno → nessuna riga vuota)
+    // 3 righe vuote in intestazione + 3 domeniche interne (08, 15, 22; il 29 è l'ultimo giorno)
     const empty = /<w:p>(?:<w:pPr>(?:(?!<\/w:pPr>).)*<\/w:pPr>)?<\/w:p>/g;
     expect(xml.match(empty)?.length).toBe(6);
   });

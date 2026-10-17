@@ -74,6 +74,8 @@ interface Block {
   startLine: number;
   /** Numero di righe coperte, comprese le righe vuote tra le settimane. */
   lines: number;
+  /** true se ci sono almeno 2 giorni: graffa + etichetta; altrimenti solo etichetta. */
+  braced: boolean;
 }
 
 function spanHeight(lines: number): number {
@@ -85,11 +87,15 @@ function brace(id: number, lines: number): string {
   return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${BRACE_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${BRACE_TOP_INSET}</wp:posOffset></wp:positionV><wp:extent cx="${BRACE_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Graffa ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${BRACE_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rightBrace"><a:avLst><a:gd name="adj1" fmla="val 50000"/><a:gd name="adj2" fmla="val 50000"/></a:avLst></a:prstGeom><a:noFill/><a:ln w="${BRACE_LINE}" cap="flat"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="solid"/></a:ln></wps:spPr><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
 }
 
-function label(id: number, lines: number): string {
-  const height = spanHeight(lines);
+function label(id: number, lines: number, braced: boolean): string {
+  // Con la graffa l'etichetta è centrata sulla graffa; in ogni caso parte sempre dalla stessa X, così sono tutte allineate. Da sola, usa una casella
+  // alta due righe centrata sul rosso della riga, così il testo da 16pt non viene tagliato.
+  const spanH = spanHeight(lines);
+  const height = braced ? spanH : 2 * LINE_EMU;
+  const top = braced ? BRACE_TOP_INSET : Math.round(BRACE_TOP_INSET + spanH / 2 - height / 2);
   const labelSize = `<w:sz w:val="${LABEL_SIZE}"/><w:szCs w:val="${LABEL_SIZE}"/>`;
   const text = paragraph(run("ESIGENZA", `<w:color w:val="000000"/>${labelSize}`), '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>');
-  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${LABEL_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${BRACE_TOP_INSET}</wp:posOffset></wp:positionV><wp:extent cx="${LABEL_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Etichetta ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LABEL_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent>${text}</w:txbxContent></wps:txbx><wps:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"><a:noAutofit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+  return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${LABEL_X}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${top}</wp:posOffset></wp:positionV><wp:extent cx="${LABEL_W}" cy="${height}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Etichetta ${id}"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LABEL_W}" cy="${height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr><wps:txbx><w:txbxContent>${text}</w:txbxContent></wps:txbx><wps:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"><a:noAutofit/></wps:bodyPr></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
 }
 
 export function buildDocumentXml(schedule: Schedule): string {
@@ -123,12 +129,13 @@ export function buildDocumentXml(schedule: Schedule): string {
     }
   });
 
-  // Gruppi consecutivi di esigenza da almeno 2 giorni ricevono la graffa.
+  // Gruppi consecutivi di esigenza: da 2 giorni in su graffa + etichetta,
+  // un giorno solo → solo etichetta accanto.
   const blocks: Block[] = [];
   let start = -1;
   const close = (end: number): void => {
     const count = lines.slice(start, end).filter((line) => line.day !== null).length;
-    if (start >= 0 && count >= 2) blocks.push({ startLine: start, lines: end - start });
+    if (start >= 0 && count >= 1) blocks.push({ startLine: start, lines: end - start, braced: count >= 2 });
     start = -1;
   };
   lines.forEach((line, index) => {
@@ -147,7 +154,8 @@ export function buildDocumentXml(schedule: Schedule): string {
     let inner = run(formatDay(line.day), rPr);
     const block = blocks.find((candidate) => candidate.startLine === index);
     if (block) {
-      inner += brace(drawingId++, block.lines) + label(drawingId++, block.lines);
+      if (block.braced) inner += brace(drawingId++, block.lines);
+      inner += label(drawingId++, block.lines, block.braced);
     }
     return paragraph(inner, BODY_PPR);
   });
