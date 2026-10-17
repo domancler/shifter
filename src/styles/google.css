@@ -49,3 +49,25 @@
   opacity: .6;
   cursor: wait;
 }
+
+/* Recupero da Google Calendar */
+.calendar-result {
+  margin-top: 16px;
+}
+
+.calendar-result-summary {
+  font-weight: 600;
+}
+
+.calendar-warnings-title {
+  margin: 14px 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.calendar-warnings {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.45;
+}

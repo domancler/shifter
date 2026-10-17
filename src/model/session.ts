@@ -3,7 +3,9 @@ import type { Schedule } from "./types";
 
 let activeSchedule: Schedule | null = null;
 let wizardIndex = 0;
-let scheduleSource: "wizard" | "import" = "wizard";
+export type ScheduleSource = "wizard" | "import" | "calendar";
+
+let scheduleSource: ScheduleSource = "wizard";
 let scheduleSaved = false;
 
 export function getActiveSchedule(): Schedule | null {
@@ -27,12 +29,13 @@ export function setWizardIndex(index: number): void {
   wizardIndex = index;
 }
 
-export function setScheduleSource(source: "wizard" | "import"): void {
+export function setScheduleSource(source: ScheduleSource): void {
   scheduleSource = source;
-  scheduleSaved = source === "import";
+  // Backup e calendario contengono dati già salvati; solo il wizard parte da dati non salvati.
+  scheduleSaved = source !== "wizard";
 }
 
-export function getScheduleSource(): "wizard" | "import" {
+export function getScheduleSource(): ScheduleSource {
   return scheduleSource;
 }
 

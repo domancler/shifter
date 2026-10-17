@@ -6,6 +6,7 @@ export type ScreenName =
   | "wizard"
   | "review"
   | "import"
+  | "calendar"
   | "export"
   | "word";
 

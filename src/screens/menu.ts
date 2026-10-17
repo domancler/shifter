@@ -165,6 +165,14 @@ export function menuScreen(): HTMLElement {
         text: "Importazioni",
       }),
 
+      menuAction(
+        "home-action home-action-import",
+        "☁",
+        "Recupera da Google Calendar",
+        "Apri un periodo già salvato nel calendario.",
+        "calendar",
+      ),
+
       el(
         "button",
         {
