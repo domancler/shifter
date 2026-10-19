@@ -5,14 +5,24 @@ self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const appRoot = new URL("./", self.registration.scope);
     const shell = await caches.open(SHELL_CACHE);
+    const pageResponse = await fetch(appRoot.href);
+    if (!pageResponse.ok) throw new Error("Unable to fetch the app shell");
+    await shell.put(appRoot.href, pageResponse.clone());
+
+    const html = await pageResponse.text();
+    const appAssets = [...html.matchAll(/(?:src|href)=["']([^"']+\.(?:js|css)(?:\?[^"']*)?)["']/g)]
+      .map(([, path]) => new URL(path, appRoot))
+      .filter((url) => url.origin === appRoot.origin && url.pathname.startsWith(appRoot.pathname))
+      .map((url) => url.href);
+
     await shell.addAll([
-      appRoot.href,
       new URL("site.webmanifest", appRoot).href,
       new URL("favicon.svg", appRoot).href,
       new URL("favicon.ico", appRoot).href,
       new URL("apple-touch-icon.png", appRoot).href,
       new URL("web-app-manifest-192x192.png", appRoot).href,
       new URL("web-app-manifest-512x512.png", appRoot).href,
+      ...appAssets,
     ]);
     await self.skipWaiting();
   })());
