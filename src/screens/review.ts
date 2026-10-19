@@ -603,15 +603,15 @@ export function reviewScreen(): HTMLElement {
     className: "screen review-screen",
   }, [
     button(
-      getScheduleSource() === "import"
-        ? "← Torna al menu"
-        : "← Torna al wizard",
+      getScheduleSource() === "wizard"
+        ? "← Torna al wizard"
+        : "← Torna al menu",
       "back",
       () => {
-        if (getScheduleSource() === "import") {
-          returnToMenuSafely();
-        } else {
+        if (getScheduleSource() === "wizard") {
           go("wizard");
+        } else {
+          returnToMenuSafely();
         }
       },
     ),
