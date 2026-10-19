@@ -2,6 +2,7 @@
 import { el } from "../ui";
 import { go } from "../router";
 import { connectFromUi } from "./googleConnect";
+import loginLogoUrl from "../assets/login-logo.png";
 
 // Imposta a false per nascondere l'accesso rapido anche durante lo sviluppo.
 // La condizione DEV impedisce che venga incluso nella build di produzione.
@@ -44,7 +45,7 @@ export function loginScreen(): HTMLElement {
             (() => {
                 const logo = document.createElement("img");
                 logo.className = "login-logo";
-                logo.src = `${import.meta.env.BASE_URL}logo.png`;
+                logo.src = loginLogoUrl;
                 logo.alt = "Logo Shifter";
                 return logo;
             })(),
