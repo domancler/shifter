@@ -1,7 +1,8 @@
 /**
  * Accesso a Google con Google Identity Services (modello "token", senza backend).
- * Il token di accesso resta SOLO in memoria: chiudendo la pagina sparisce.
- * Non esiste refresh token: alla scadenza (circa 1 ora) serve un nuovo consenso.
+ * Il token è conservato nella sessione della scheda per sopravvivere ai refresh,
+ * poi viene rimosso alla chiusura della scheda o alla scadenza (circa 1 ora).
+ * Non esiste refresh token: alla scadenza serve un nuovo consenso.
  */
 
 export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
@@ -83,7 +84,7 @@ export class AuthError extends Error {
   }
 }
 
-// ── Archivio del token (in memoria, con scadenza) ─────────────────────────
+// ── Archivio del token (sessione della scheda, con scadenza) ───────────────
 
 export interface TokenStore {
   set(token: string, expiresInSeconds: number): void;
@@ -91,28 +92,89 @@ export interface TokenStore {
   clear(): void;
 }
 
-export function createTokenStore(now: () => number = Date.now): TokenStore {
+export interface TokenPersistence {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+const TOKEN_STORAGE_KEY = "shifter-google-token";
+
+export function createTokenStore(
+  now: () => number = Date.now,
+  persistence?: TokenPersistence,
+): TokenStore {
   let token: string | null = null;
   let expiresAt = 0;
+
+  try {
+    const saved = persistence?.getItem(TOKEN_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as { token?: unknown; expiresAt?: unknown };
+      if (
+        typeof parsed.token === "string" &&
+        typeof parsed.expiresAt === "number" &&
+        now() < parsed.expiresAt
+      ) {
+        token = parsed.token;
+        expiresAt = parsed.expiresAt;
+      } else {
+        persistence?.removeItem(TOKEN_STORAGE_KEY);
+      }
+    }
+  } catch {
+    try {
+      persistence?.removeItem(TOKEN_STORAGE_KEY);
+    } catch {
+      // sessionStorage può non essere disponibile in modalità privata.
+    }
+  }
 
   return {
     set(value, expiresInSeconds) {
       token = value;
       expiresAt = now() + expiresInSeconds * 1000 - EXPIRY_MARGIN_MS;
+      try {
+        persistence?.setItem(
+          TOKEN_STORAGE_KEY,
+          JSON.stringify({ token, expiresAt }),
+        );
+      } catch {
+        // Il login resta utilizzabile anche se sessionStorage non è disponibile.
+      }
     },
     get() {
       if (token !== null && now() < expiresAt) return token;
       token = null;
+      expiresAt = 0;
+      try {
+        persistence?.removeItem(TOKEN_STORAGE_KEY);
+      } catch {
+        // Ignora gli errori di storage e considera comunque scaduta la sessione.
+      }
       return null;
     },
     clear() {
       token = null;
       expiresAt = 0;
+      try {
+        persistence?.removeItem(TOKEN_STORAGE_KEY);
+      } catch {
+        // Ignora gli errori di storage: il token in memoria è già stato rimosso.
+      }
     },
   };
 }
 
-const store = createTokenStore();
+function getSessionStorage(): TokenPersistence | undefined {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+const store = createTokenStore(Date.now, getSessionStorage());
 
 // ── Caricamento dello script Google ───────────────────────────────────────
 

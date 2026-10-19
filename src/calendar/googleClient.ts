@@ -47,7 +47,7 @@ async function toApiError(response: Response): Promise<GoogleApiError> {
   return new GoogleApiError(response.status, reason, friendlyMessage(response.status, reason, message));
 }
 
-/** Chiamata alle API di Calendar con il token in memoria; su 401 tenta un rinnovo e riprova una volta. */
+/** Chiamata alle API di Calendar; su 401 tenta un rinnovo e riprova una volta. */
 export async function googleFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const send = async (token: string): Promise<Response> =>
     fetch(`${API_BASE}${path}`, {
@@ -78,7 +78,32 @@ export interface CalendarInfo {
   timeZone: string;
 }
 
-let connected: CalendarInfo | null = null;
+const CONNECTED_CALENDAR_KEY = "shifter-google-calendar";
+
+function readConnectedCalendar(): CalendarInfo | null {
+  try {
+    const saved = sessionStorage.getItem(CONNECTED_CALENDAR_KEY);
+    if (!saved) return null;
+    const calendar = JSON.parse(saved) as Partial<CalendarInfo>;
+    return typeof calendar.name === "string" && typeof calendar.timeZone === "string"
+      ? { name: calendar.name, timeZone: calendar.timeZone }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+let connected: CalendarInfo | null = readConnectedCalendar();
+
+function saveConnectedCalendar(calendar: CalendarInfo | null): void {
+  connected = calendar;
+  try {
+    if (calendar) sessionStorage.setItem(CONNECTED_CALENDAR_KEY, JSON.stringify(calendar));
+    else sessionStorage.removeItem(CONNECTED_CALENDAR_KEY);
+  } catch {
+    // Il collegamento resta valido in memoria anche se sessionStorage non è disponibile.
+  }
+}
 
 /** Legge nome e fuso del calendario principale: serve anche a verificare che il token funzioni. */
 export async function getPrimaryCalendarInfo(): Promise<CalendarInfo> {
@@ -92,19 +117,19 @@ export async function connectGoogle(): Promise<CalendarInfo> {
   await signIn("select_account");
 
   try {
-    connected = await getPrimaryCalendarInfo();
+    const calendar = await getPrimaryCalendarInfo();
+    saveConnectedCalendar(calendar);
+    return calendar;
   } catch (error) {
     clearAccessToken();
-    connected = null;
+    saveConnectedCalendar(null);
     throw error;
   }
-
-  return connected;
 }
 
 export function disconnectGoogle(): void {
   clearAccessToken();
-  connected = null;
+  saveConnectedCalendar(null);
 }
 
 export function isGoogleConnected(): boolean {

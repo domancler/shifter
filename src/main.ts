@@ -8,6 +8,7 @@ import { manualScreen, resumeWizardScreen } from "./screens/manual";
 import { reviewScreen } from "./screens/review";
 import { importScreen } from "./screens/import";
 import { calendarImportScreen } from "./screens/calendarImport";
+import { isGoogleConnected } from "./calendar/googleClient";
 
 register("login", loginScreen);
 register("menu", menuScreen);
@@ -20,4 +21,4 @@ register("calendar", calendarImportScreen);
 register("export", () => placeholderScreen("Esporta programmato come backup"));
 register("word", () => placeholderScreen("Export programmato da inviare (Word)"));
 
-go("login");
+go(isGoogleConnected() ? "menu" : "login");
