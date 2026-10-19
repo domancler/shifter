@@ -1,5 +1,6 @@
 
 import "./style.css";
+import { initializePwa } from "./pwa";
 import { register, go } from "./router";
 import { menuScreen } from "./screens/menu";
 import { loginScreen } from "./screens/login";
@@ -9,6 +10,8 @@ import { reviewScreen } from "./screens/review";
 import { importScreen } from "./screens/import";
 import { calendarImportScreen } from "./screens/calendarImport";
 import { isGoogleConnected } from "./calendar/googleClient";
+
+initializePwa();
 
 register("login", loginScreen);
 register("menu", menuScreen);

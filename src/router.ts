@@ -27,6 +27,10 @@ function getSavedTheme(): Theme {
 function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem(THEME_KEY, theme);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute(
+    "content",
+    theme === "dark" ? "#0f172a" : "#f3f6fb",
+  );
 }
 
 export function createThemeToggle(
@@ -89,11 +93,17 @@ export function go(name: ScreenName): void {
   // Ripristina il tema salvato senza resettare i dati del wizard.
   applyTheme(getSavedTheme());
 
-  root.replaceChildren(renderer());
+  const screen = renderer();
+  root.replaceChildren(screen);
 
   // Nella revisione il tema è integrato nella toolbar superiore.
   if (name !== "review") {
-    root.append(createThemeToggle());
+    const themeToggle = createThemeToggle();
+    if (name === "menu") {
+      screen.append(themeToggle);
+    } else {
+      root.append(themeToggle);
+    }
   }
 
   window.scrollTo(0, 0);

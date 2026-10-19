@@ -62,6 +62,12 @@
     .review-card {
         padding: 18px;
     }
+
+    .home-screen>.global-theme-toggle {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+    }
 }
 
 /* Accessibilità: riduzione delle animazioni */
