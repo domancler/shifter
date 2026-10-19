@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "shifter-pwa-";
-const SHELL_CACHE = `${CACHE_PREFIX}shell-v1`;
+const SHELL_CACHE = `${CACHE_PREFIX}shell-v2`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -20,6 +20,7 @@ self.addEventListener("install", (event) => {
       new URL("favicon.svg", appRoot).href,
       new URL("favicon.ico", appRoot).href,
       new URL("apple-touch-icon.png", appRoot).href,
+      new URL("logo.png", appRoot).href,
       new URL("web-app-manifest-192x192.png", appRoot).href,
       new URL("web-app-manifest-512x512.png", appRoot).href,
       ...appAssets,
@@ -65,7 +66,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (requestUrl.pathname.includes("/assets/") || /\/(site\.webmanifest|favicon\.svg|favicon\.ico|apple-touch-icon\.png|web-app-manifest-(192x192|512x512)\.png)$/.test(requestUrl.pathname)) {
+  if (requestUrl.pathname.includes("/assets/") || /\/(site\.webmanifest|favicon\.svg|favicon\.ico|apple-touch-icon\.png|logo\.png|web-app-manifest-(192x192|512x512)\.png)$/.test(requestUrl.pathname)) {
     event.respondWith((async () => {
       const shell = await caches.open(SHELL_CACHE);
       const cached = await shell.match(request);
