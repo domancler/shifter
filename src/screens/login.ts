@@ -37,8 +37,14 @@ export function loginScreen(): HTMLElement {
 
     return el("main", { className: "screen login-screen" }, [
         el("header", { className: "brand-header login-header" }, [
-            el("div", { className: "login-logo", text: "S" }),
-            el("h1", { text: "Shifter" }),
+            (() => {
+                const logo = document.createElement("img");
+                logo.className = "login-logo";
+                logo.src = "/logo.png";
+                logo.alt = "Logo Shifter";
+                return logo;
+            })(),
+            // el("h1", { text: "Shifter" }),
             el("p", {
                 className: "muted",
                 text: "Il tuo programmato, senza complicazioni.",

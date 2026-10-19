@@ -62,8 +62,8 @@ function googleStatusBar(): HTMLElement {
       el("span", {
         className: "google-status-text",
         text: calendar
-          ? `Google Calendar collegato · ${calendar.name}`
-          : "Google Calendar non collegato",
+          ? `Account Google collegato · ${calendar.name}`
+          : "Account Google non collegato",
       }),
       button,
     ],
@@ -109,55 +109,55 @@ export function menuScreen(): HTMLElement {
       ),
     ]),
 
-    el("section", { className: "home-section" }, [
-      el("h2", {
-        className: "home-section-title",
-        text: "Esportazioni",
-      }),
+    // el("section", { className: "home-section" }, [
+    //   el("h2", {
+    //     className: "home-section-title",
+    //     text: "Esportazioni",
+    //   }),
 
-      el("div", { className: "home-card-grid" }, [
-        el(
-          "button",
-          {
-            className: "home-action home-action-card",
-            onClick: () => go("word"),
-          },
-          [
-            el("span", {
-              className: "home-card-icon home-word-icon",
-              text: "W",
-            }),
-            el("span", { className: "home-card-title", text: "Esporta Word" }),
-            el("span", {
-              className: "home-card-description",
-              text: "Crea un documento.",
-            }),
-          ],
-        ),
+    //   el("div", { className: "home-card-grid" }, [
+    //     el(
+    //       "button",
+    //       {
+    //         className: "home-action home-action-card",
+    //         onClick: () => go("word"),
+    //       },
+    //       [
+    //         el("span", {
+    //           className: "home-card-icon home-word-icon",
+    //           text: "W",
+    //         }),
+    //         el("span", { className: "home-card-title", text: "Esporta Word" }),
+    //         el("span", {
+    //           className: "home-card-description",
+    //           text: "Crea un documento.",
+    //         }),
+    //       ],
+    //     ),
 
-        el(
-          "button",
-          {
-            className: "home-action home-action-card",
-            onClick: () => go("export"),
-          },
-          [
-            el("span", {
-              className: "home-card-icon home-backup-icon",
-              text: "↓",
-            }),
-            el("span", {
-              className: "home-card-title",
-              text: "Esporta backup",
-            }),
-            el("span", {
-              className: "home-card-description",
-              text: "Salva una copia.",
-            }),
-          ],
-        ),
-      ]),
-    ]),
+    //     el(
+    //       "button",
+    //       {
+    //         className: "home-action home-action-card",
+    //         onClick: () => go("export"),
+    //       },
+    //       [
+    //         el("span", {
+    //           className: "home-card-icon home-backup-icon",
+    //           text: "↓",
+    //         }),
+    //         el("span", {
+    //           className: "home-card-title",
+    //           text: "Esporta backup",
+    //         }),
+    //         el("span", {
+    //           className: "home-card-description",
+    //           text: "Salva una copia.",
+    //         }),
+    //       ],
+    //     ),
+    //   ]),
+    // ]),
 
     el("section", { className: "home-section" }, [
       el("h2", {
