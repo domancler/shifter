@@ -75,6 +75,12 @@
     transition: border-color .15s ease, box-shadow .15s ease;
 }
 
+/* Safari iOS conserva una larghezza intrinseca nei controlli data e mese. */
+.field input[type="date"],
+.field input[type="month"] {
+    flex: 1 1 0%;
+}
+
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
