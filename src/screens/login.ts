@@ -44,7 +44,7 @@ export function loginScreen(): HTMLElement {
             (() => {
                 const logo = document.createElement("img");
                 logo.className = "login-logo";
-                logo.src = "/logo.png";
+                logo.src = `${import.meta.env.BASE_URL}logo.png`;
                 logo.alt = "Logo Shifter";
                 return logo;
             })(),
