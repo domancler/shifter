@@ -11,7 +11,7 @@ function menuAction(
   title: string,
   description: string,
   target: ScreenName,
-): HTMLElement {
+): HTMLButtonElement {
   return el(
     "button",
     {
@@ -71,6 +71,19 @@ function googleStatusBar(): HTMLElement {
 }
 
 export function menuScreen(): HTMLElement {
+  const calendarImport = menuAction(
+    "home-action home-action-import",
+    "☁",
+    "Recupera da Google Calendar",
+    "Apri un periodo già salvato nel calendario.",
+    "calendar",
+  );
+  const connected = Boolean(getConnectedCalendar());
+  calendarImport.disabled = !connected;
+  calendarImport.title = connected
+    ? "Recupera un periodo da Google Calendar"
+    : "Collegati a Google Calendar per usare questa funzione";
+
   return el("main", { className: "screen home-screen" }, [
     el("header", { className: "brand-header home-header" }, [
       el("p", {
@@ -165,13 +178,7 @@ export function menuScreen(): HTMLElement {
         text: "Importazioni",
       }),
 
-      menuAction(
-        "home-action home-action-import",
-        "☁",
-        "Recupera da Google Calendar",
-        "Apri un periodo già salvato nel calendario.",
-        "calendar",
-      ),
+      calendarImport,
 
       el(
         "button",

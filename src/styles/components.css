@@ -833,11 +833,17 @@
     transition: filter .15s ease, transform .1s ease;
 }
 
-.review-action-button:hover {
+.review-action-button:not(:disabled):hover {
     filter: brightness(1.12);
 }
 
-.review-action-button:active {
+.review-action-button:disabled {
+    filter: grayscale(.2);
+    opacity: .62;
+    cursor: not-allowed;
+}
+
+.review-action-button:not(:disabled):active {
     transform: scale(.98);
 }
 
@@ -926,8 +932,14 @@
     transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
 
-.home-action:active {
+.home-action:not(:disabled):active {
     transform: scale(.985);
+}
+
+.home-action:disabled {
+    filter: grayscale(.15);
+    opacity: .64;
+    cursor: not-allowed;
 }
 
 .home-action-primary {

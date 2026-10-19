@@ -5,7 +5,6 @@ import { go, createThemeToggle } from "../router";
 import { buildWordBlob, wordFileName } from "../model/word";
 import { saveScheduleToGoogle } from "../calendar/saveSchedule";
 import {
-  connectGoogle,
   describeError,
   isGoogleConnected,
 } from "../calendar/googleClient";
@@ -512,6 +511,14 @@ export function reviewScreen(): HTMLElement {
     async () => {
       const currentSchedule = getActiveSchedule();
 
+      if (!isGoogleConnected()) {
+        showToast(
+          "Collegati a Google Calendar dalla home prima di usare questa funzione.",
+          "warning",
+        );
+        return;
+      }
+
       if (!currentSchedule) {
         showToast(
           "Non c'è nessun programmato da salvare.",
@@ -523,17 +530,6 @@ export function reviewScreen(): HTMLElement {
       calendarAction.disabled = true;
 
       try {
-        if (!isGoogleConnected()) {
-          const calendar = await connectGoogle();
-
-          showToast(
-            `Collegato a ${calendar.name}.`,
-            "success",
-            "Google Calendar collegato",
-          );
-        }
-
-
         const missingDays = getUncompiledDays(currentSchedule);
 
         if (missingDays.length > 0) {
@@ -598,6 +594,10 @@ export function reviewScreen(): HTMLElement {
       }
     },
   );
+  calendarAction.disabled = !isGoogleConnected();
+  calendarAction.title = isGoogleConnected()
+    ? "Inserisci il programmato in Google Calendar"
+    : "Collegati a Google Calendar dalla home per usare questa funzione";
 
   const screen = el("main", {
     className: "screen review-screen",
