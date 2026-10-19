@@ -62,7 +62,7 @@ function googleStatusBar(): HTMLElement {
       el("span", {
         className: "google-status-text",
         text: calendar
-          ? `Account Google collegato · ${calendar.name}`
+          ? `Account: ${calendar.name} ` //`Account Google collegato · ${calendar.name}`
           : "Account Google non collegato",
       }),
       button,
