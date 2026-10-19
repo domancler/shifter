@@ -12,16 +12,17 @@
   font-size: 14px;
 }
 
-.google-status-dot {
+.google-status-assistant {
   flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--muted);
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  transition: filter .18s ease, opacity .18s ease;
 }
 
-.google-status.is-connected .google-status-dot {
-  background: #22c55e;
+.google-status:not(.is-connected) .google-status-assistant {
+  filter: grayscale(1);
+  opacity: .45;
 }
 
 .google-status-text {

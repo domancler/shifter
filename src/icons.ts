@@ -44,14 +44,22 @@ const brandIconUrls = {
     "https://res.cdn.office.net/files/fabric-cdn-prod_20251117.001/assets/brand-icons/product/png/word_48x1.png",
 } as const;
 
-export function createGoogleCalendarIcon(className = "ui-brand-icon"): SVGSVGElement {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 32 32");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("focusable", "false");
-  svg.classList.add(className);
-  svg.innerHTML = googleCalendarMarkup;
-  return svg;
+export function createGoogleCalendarIcon(className = "ui-brand-icon"): HTMLImageElement {
+  const image = document.createElement("img");
+  image.className = className;
+  image.src = "https://img.icons8.com/plasticine/100/google-calendar--v1.png";
+  image.alt = "";
+  image.loading = "lazy";
+  image.addEventListener("error", () => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 32 32");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.classList.add(className);
+    svg.innerHTML = googleCalendarMarkup;
+    image.replaceWith(svg);
+  }, { once: true });
+  return image;
 }
 
 export function createChecklistBrandIcon(): HTMLImageElement {
@@ -90,13 +98,40 @@ export function createImportFileIcon(): HTMLImageElement {
   return image;
 }
 
+export function createGoogleAssistantIcon(): HTMLImageElement {
+  const image = document.createElement("img");
+  image.className = "google-status-assistant";
+  image.src = "https://img.icons8.com/color/48/google-assistant--v1.png";
+  image.alt = "";
+  image.setAttribute("aria-hidden", "true");
+  image.loading = "lazy";
+  image.addEventListener("error", () => {
+    image.replaceWith(createIcon("info", "google-status-assistant-fallback"));
+  }, { once: true });
+  return image;
+}
+
+export function createPhotoScanIcon(): HTMLImageElement {
+  const image = document.createElement("img");
+  image.className = "ui-brand-icon";
+  image.src = "https://img.icons8.com/parakeet/48/portrait-mode-scanning.png";
+  image.alt = "";
+  image.loading = "lazy";
+  image.addEventListener("error", () => {
+    image.replaceWith(createIcon("photo"));
+  }, { once: true });
+  return image;
+}
+
 export function createBrandIcon(
   name: keyof typeof brandIconUrls,
   alt: string,
 ): HTMLImageElement {
   const image = document.createElement("img");
   image.className = "ui-brand-icon";
-  image.src = brandIconUrls[name];
+  image.src = name === "microsoftWord"
+    ? "https://img.icons8.com/color/48/microsoft-word-2019--v2.png"
+    : brandIconUrls[name];
   image.alt = alt;
   image.loading = "lazy";
   image.addEventListener("error", () => {

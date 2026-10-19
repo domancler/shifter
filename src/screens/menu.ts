@@ -4,7 +4,7 @@ import { openBackupPicker } from "./import";
 import { go, type ScreenName } from "../router";
 import { disconnectGoogle, getConnectedCalendar } from "../calendar/googleClient";
 import { connectFromUi } from "./googleConnect";
-import { createGoogleCalendarIcon, createIcon, createImportFileIcon } from "../icons";
+import { createGoogleAssistantIcon, createGoogleCalendarIcon, createIcon, createImportFileIcon, createPhotoScanIcon } from "../icons";
 
 function menuAction(
   className: string,
@@ -56,7 +56,7 @@ function googleStatusBar(): HTMLElement {
     "section",
     { className: `google-status${calendar ? " is-connected" : ""}` },
     [
-      el("span", { className: "google-status-dot" }),
+      createGoogleAssistantIcon(),
       el("span", {
         className: "google-status-text",
         text: calendar
@@ -113,7 +113,7 @@ export function menuScreen(): HTMLElement {
 
       menuAction(
         "home-action home-action-photo",
-        createIcon("photo"),
+        createPhotoScanIcon(),
         "Crea da una foto",
         "Parti dal prospetto dei turni.",
         "photo",
