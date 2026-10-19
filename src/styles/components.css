@@ -2,6 +2,31 @@
    MENU PRINCIPALE
    ========================================================= */
 
+.ui-icon {
+    display: block;
+    flex: 0 0 auto;
+    width: 1.25em;
+    height: 1.25em;
+}
+
+.ui-brand-icon {
+    display: block;
+    flex: 0 0 auto;
+    object-fit: contain;
+}
+
+.button-with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.back .ui-icon,
+.secondary-button .ui-icon {
+    width: 18px;
+    height: 18px;
+}
+
 .menu {
     display: flex;
     flex-direction: column;
@@ -242,6 +267,12 @@
     background: var(--soft);
 }
 
+.global-theme-toggle .ui-icon,
+.review-theme-toggle .ui-icon {
+    width: 21px;
+    height: 21px;
+}
+
 .global-theme-toggle:active {
     transform: scale(.92);
 }
@@ -289,6 +320,17 @@
 
 .review-toolbar-back:hover {
     background: var(--soft);
+}
+
+.review-toolbar-back .ui-icon {
+    width: 21px;
+    height: 21px;
+}
+
+.exit-dialog-close .ui-icon,
+.review-modal-close .ui-icon {
+    width: 20px;
+    height: 20px;
 }
 
 .review-toolbar-title {
@@ -514,6 +556,11 @@
     outline-offset: 1px;
 }
 
+.review-day-essential .essential-icon {
+    width: 20px;
+    height: 20px;
+}
+
 
 /* Evita l'effetto hover persistente sui dispositivi touch */
 
@@ -538,10 +585,25 @@
     text-align: center;
 }
 
+.review-day-note .review-note-icon {
+    width: 15px;
+    height: 15px;
+}
+
 .review-day-arrow {
     color: var(--muted);
     font-size: 1.25rem;
     text-align: right;
+}
+
+.review-day-chevron {
+    width: 17px;
+    height: 17px;
+}
+
+.review-back-to-top .ui-icon {
+    width: 24px;
+    height: 24px;
 }
 
 /* Separazione tra domenica e lunedì */
@@ -875,6 +937,17 @@
     line-height: 1;
 }
 
+.review-action-icon .ui-icon {
+    width: 27px;
+    height: 27px;
+}
+
+.review-action-icon .ui-brand-icon {
+    width: 31px;
+    height: 31px;
+    object-fit: contain;
+}
+
 .review-action-label {
     font-size: .74rem;
     font-weight: 650;
@@ -883,23 +956,24 @@
 }
 
 .review-action-check {
-    background: #7c3aed;
-    border-color: #8b5cf6;
+    background: #159447;
+    border-color: #38c66a;
 }
 
 .review-action-calendar {
-    background: #34a853;
-    border-color: #2d9448;
+    background: #8246d8;
+    border-color: #a578f0;
+    color: #fff;
 }
 
 .review-action-word {
-    background: #185abd;
-    border-color: #2b7cd3;
+    background: #0874d1;
+    border-color: #369bfa;
 }
 
 .review-action-backup {
-    background: #b45309;
-    border-color: #d97706;
+    background: #d96808;
+    border-color: #ff922e;
 }
 
 
@@ -981,7 +1055,16 @@
     border-radius: 12px;
     background: rgb(255 255 255 / 18%);
     color: #fff;
-    font-size: 1.8rem;
+}
+
+.home-action-icon .ui-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.home-action-primary .home-action-icon .ui-icon {
+    width: 25px;
+    height: 25px;
 }
 
 .home-action-content {
@@ -1011,10 +1094,15 @@
 }
 
 .home-action-arrow {
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    font-size: 1.6rem;
-    line-height: 1;
     opacity: .7;
+}
+
+.home-action-arrow .ui-icon {
+    width: 20px;
+    height: 20px;
 }
 
 .home-action-photo,
@@ -1031,7 +1119,27 @@
     height: 38px;
     border-radius: 11px;
     background: var(--surface-secondary);
-    font-size: 1.35rem;
+}
+
+.home-action-icon .ui-brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.home-action-calendar .home-action-icon {
+    background: transparent;
+}
+
+.home-action-calendar .home-action-icon .ui-brand-icon {
+    width: 38px;
+    height: 38px;
+}
+
+.home-action-backup .home-action-icon {
+    background: #fff0dc;
+    color: #a85d12;
 }
 
 .home-card-grid {

@@ -1,14 +1,16 @@
 
+import { createIcon, type IconName } from "./icons";
+
 export type ToastType = "success" | "info" | "warning" | "error";
 
 let container: HTMLDivElement | null = null;
 let nextId = 0;
 
-const ICONS: Record<ToastType, string> = {
-  success: "✓",
-  info: "i",
-  warning: "!",
-  error: "×",
+const ICONS: Record<ToastType, IconName> = {
+  success: "checkCircle",
+  info: "info",
+  warning: "warning",
+  error: "close",
 };
 
 const TITLES: Record<ToastType, string> = {
@@ -49,7 +51,7 @@ export function showToast(
 
   const icon = document.createElement("span");
   icon.className = "toast-icon";
-  icon.textContent = ICONS[type];
+  icon.append(createIcon(ICONS[type], "toast-status-icon"));
   icon.setAttribute("aria-hidden", "true");
 
   const content = document.createElement("div");
@@ -68,7 +70,7 @@ export function showToast(
   const close = document.createElement("button");
   close.className = "toast-close";
   close.type = "button";
-  close.textContent = "×";
+  close.append(createIcon("close", "toast-close-icon"));
   close.setAttribute("aria-label", "Chiudi messaggio");
 
   let removed = false;

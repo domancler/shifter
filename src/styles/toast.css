@@ -54,6 +54,11 @@
     font-weight: 800;
 }
 
+.toast-status-icon {
+    width: 19px;
+    height: 19px;
+}
+
 .toast-success .toast-icon {
     background: #dff4e7;
     color: #176b50;
@@ -106,6 +111,12 @@
     color: var(--muted);
     font-size: 1.3rem;
     cursor: pointer;
+}
+
+.toast-close-icon {
+    width: 17px;
+    height: 17px;
+    margin: auto;
 }
 
 .toast-close:hover {

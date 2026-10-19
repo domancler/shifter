@@ -3,6 +3,7 @@ import { el } from "../ui";
 import { go } from "../router";
 import { importBackup } from "../model/backup";
 import { showToast } from "../toast";
+import { setButtonIconLabel } from "../icons";
 import {
   setActiveSchedule,
   setWizardIndex,
@@ -69,8 +70,11 @@ export function importScreen(): HTMLElement {
     }
   });
 
+  const backButton = button("Menu", "back", () => go("menu"));
+  setButtonIconLabel(backButton, "arrowLeft", "Menu");
+
   const screen = el("main", { className: "screen import-screen" }, [
-    button("← Menu", "back", () => go("menu")),
+    backButton,
     el("h1", { text: "Importa backup" }),
     el("p", {
       text: "Carica un backup JSON per recuperare il tuo programma e aprirlo direttamente nella Review.",

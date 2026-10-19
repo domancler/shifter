@@ -32,6 +32,14 @@ import {
   type Schedule,
   type ShiftCode,
 } from "../model/types";
+import {
+  createBrandIcon,
+  createBackupBrandIcon,
+  createChecklistBrandIcon,
+  createGoogleCalendarIcon,
+  createIcon,
+  setButtonIconLabel,
+} from "../icons";
 
 function button(
   text: string,
@@ -43,8 +51,21 @@ function button(
   return result;
 }
 
+function iconButton(
+  iconName: "close" | "arrowLeft",
+  label: string,
+  className: string,
+  onClick: () => void,
+): HTMLButtonElement {
+  const result = button("", className, onClick);
+  result.append(createIcon(iconName));
+  result.setAttribute("aria-label", label);
+  result.title = label;
+  return result;
+}
+
 function actionButton(
-  icon: string,
+  icon: Element,
   text: string,
   className: string,
   onClick: () => void,
@@ -56,7 +77,7 @@ function actionButton(
 
   const iconElement = document.createElement("span");
   iconElement.className = "review-action-icon";
-  iconElement.textContent = icon;
+  iconElement.append(icon);
 
   const labelElement = document.createElement("span");
   labelElement.className = "review-action-label";
@@ -106,7 +127,7 @@ function returnToMenuSafely(): void {
     className: "exit-dialog-heading",
   }, [
     el("h2", { text: "Programma non salvato" }),
-    button("×", "exit-dialog-close", closeDialog),
+    iconButton("close", "Chiudi finestra", "exit-dialog-close", closeDialog),
   ]);
 
   const message = el("p", {
@@ -166,7 +187,11 @@ export function reviewScreen(): HTMLElement {
   if (!schedule) {
     return el("main", { className: "screen" }, [
       el("h1", { text: "Nessun programmato da revisionare" }),
-      button("← Menu", "back", () => go("menu")),
+      (() => {
+        const back = button("Menu", "back", () => go("menu"));
+        setButtonIconLabel(back, "arrowLeft", "Menu");
+        return back;
+      })(),
     ]);
   }
 
@@ -198,7 +223,7 @@ export function reviewScreen(): HTMLElement {
     isCompiled: boolean,
   ): void {
     element.classList.toggle("is-active", isEssential);
-    element.textContent = "!";
+    element.replaceChildren(createIcon("alert", "essential-icon"));
     element.title = isEssential
       ? "Disattiva esigenza"
       : "Attiva esigenza";
@@ -279,7 +304,7 @@ export function reviewScreen(): HTMLElement {
             month: "long",
           }),
         }),
-        button("×", "review-modal-close", closeModal),
+        iconButton("close", "Chiudi finestra", "review-modal-close", closeModal),
       ]);
 
       const leaveGrid = el(
@@ -348,8 +373,11 @@ export function reviewScreen(): HTMLElement {
             latest.days[index].entry === null,
           );
 
-          rowState.note.textContent =
-            latest.days[index].note.trim() ? "✎" : "";
+          if (latest.days[index].note.trim()) {
+            rowState.note.replaceChildren(createIcon("note", "review-note-icon"));
+          } else {
+            rowState.note.replaceChildren();
+          }
           rowState.note.title =
             latest.days[index].note.trim()
               ? "Questa giornata contiene note"
@@ -412,16 +440,18 @@ export function reviewScreen(): HTMLElement {
 
     const noteIndicator = el("span", {
       className: "review-day-note",
-      text: day.note.trim() ? "✎" : "",
     });
+    if (day.note.trim()) {
+      noteIndicator.append(createIcon("note", "review-note-icon"));
+    }
     noteIndicator.title = day.note.trim()
       ? "Questa giornata contiene note"
       : "";
 
     const arrow = el("span", {
       className: "review-day-arrow",
-      text: "›",
     });
+    arrow.append(createIcon("chevron", "review-day-chevron"));
 
     const isMonday =
       new Date(`${day.date}T12:00:00`).getDay() === 1;
@@ -505,7 +535,7 @@ export function reviewScreen(): HTMLElement {
   });
 
   const calendarAction = actionButton(
-    "▦",
+    createGoogleCalendarIcon(),
     "Inserisci nel Calendar",
     "review-action-calendar",
     async () => {
@@ -602,19 +632,26 @@ export function reviewScreen(): HTMLElement {
   const screen = el("main", {
     className: "screen review-screen",
   }, [
-    button(
-      getScheduleSource() === "wizard"
-        ? "← Torna al wizard"
-        : "← Torna al menu",
-      "back",
-      () => {
-        if (getScheduleSource() === "wizard") {
-          go("wizard");
-        } else {
-          returnToMenuSafely();
-        }
-      },
-    ),
+    (() => {
+      const fromWizard = getScheduleSource() === "wizard";
+      const back = button(
+        fromWizard ? "Torna al wizard" : "Torna al menu",
+        "back",
+        () => {
+          if (fromWizard) {
+            go("wizard");
+          } else {
+            returnToMenuSafely();
+          }
+        },
+      );
+      setButtonIconLabel(
+        back,
+        "arrowLeft",
+        fromWizard ? "Torna al wizard" : "Torna al menu",
+      );
+      return back;
+    })(),
 
     el("h1", { text: "Review" }),
 
@@ -634,7 +671,7 @@ export function reviewScreen(): HTMLElement {
       el("div", { className: "review-actions-grid" }, [
         el("div", { className: "review-actions-secondary" }, [
           actionButton(
-            "✓",
+            createChecklistBrandIcon(),
             "Controllo turni",
             "review-action-check",
             () => showToast(
@@ -644,7 +681,7 @@ export function reviewScreen(): HTMLElement {
           ),
 
           actionButton(
-            "W",
+            createBrandIcon("microsoftWord", "Microsoft Word"),
             "Word",
             "review-action-word",
             async () => {
@@ -678,7 +715,7 @@ export function reviewScreen(): HTMLElement {
           ),
 
           actionButton(
-            "↓",
+            createBackupBrandIcon(),
             "Backup",
             "review-action-backup",
             () => {
@@ -748,13 +785,12 @@ export function reviewScreen(): HTMLElement {
   const floatingToolbar = document.createElement("div");
   floatingToolbar.className = "review-floating-toolbar";
 
-  const backButton = button(
-    "←",
+  const backButton = iconButton(
+    "arrowLeft",
+    "Torna al menu",
     "review-toolbar-back",
     returnToMenuSafely,
   );
-  backButton.setAttribute("aria-label", "Torna al menu");
-  backButton.title = "Torna al menu";
 
   const toolbarTitle = el("span", {
     className: "review-toolbar-title",
@@ -767,9 +803,10 @@ export function reviewScreen(): HTMLElement {
     createThemeToggle("review-theme-toggle"),
   );
 
-  const backToTop = button("↑", "review-back-to-top", () => {
+  const backToTop = button("", "review-back-to-top", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
+  backToTop.append(createIcon("arrowUp"));
 
   backToTop.setAttribute("aria-label", "Torna all'inizio");
   backToTop.title = "Torna all'inizio";

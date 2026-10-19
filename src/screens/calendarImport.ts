@@ -8,6 +8,7 @@ import { describeError, isGoogleConnected } from "../calendar/googleClient";
 import { GoogleCalendarProvider } from "../calendar/googleProvider";
 import { buildScheduleFromEvents, type RecoveredSchedule } from "../calendar/scheduleFromEvents";
 import { connectFromUi } from "./googleConnect";
+import { setButtonIconLabel } from "../icons";
 
 function field(labelText: string, input: HTMLInputElement): HTMLElement {
   return el("label", { className: "field" }, [el("span", { text: labelText }), input]);
@@ -137,8 +138,11 @@ export function calendarImportScreen(): HTMLElement {
     }
   }
 
+  const backButton = el("button", { className: "back", onClick: () => go("menu") });
+  setButtonIconLabel(backButton, "arrowLeft", "Menu");
+
   return el("main", { className: "screen" }, [
-    el("button", { className: "back", text: "← Menu", onClick: () => go("menu") }),
+    backButton,
     el("h1", { text: "Recupera da Google Calendar" }),
     el("section", { className: "panel" }, [
       el("p", {

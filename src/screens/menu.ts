@@ -4,10 +4,11 @@ import { openBackupPicker } from "./import";
 import { go, type ScreenName } from "../router";
 import { disconnectGoogle, getConnectedCalendar } from "../calendar/googleClient";
 import { connectFromUi } from "./googleConnect";
+import { createGoogleCalendarIcon, createIcon, createImportFileIcon } from "../icons";
 
 function menuAction(
   className: string,
-  icon: string,
+  icon: Element,
   title: string,
   description: string,
   target: ScreenName,
@@ -19,7 +20,7 @@ function menuAction(
       onClick: () => go(target),
     },
     [
-      el("span", { className: "home-action-icon", text: icon }),
+      el("span", { className: "home-action-icon" }, [icon]),
       el("span", { className: "home-action-content" }, [
         el("span", { className: "home-action-title", text: title }),
         el("span", {
@@ -27,10 +28,7 @@ function menuAction(
           text: description,
         }),
       ]),
-      el("span", {
-        className: "home-action-arrow",
-        text: "›",
-      }),
+      el("span", { className: "home-action-arrow" }, [createIcon("chevron")]),
     ],
   );
 }
@@ -72,8 +70,8 @@ function googleStatusBar(): HTMLElement {
 
 export function menuScreen(): HTMLElement {
   const calendarImport = menuAction(
-    "home-action home-action-import",
-    "☁",
+    "home-action home-action-import home-action-calendar",
+    createGoogleCalendarIcon(),
     "Recupera da Google Calendar",
     "Apri un periodo già salvato nel calendario.",
     "calendar",
@@ -107,7 +105,7 @@ export function menuScreen(): HTMLElement {
 
       menuAction(
         "home-action home-action-primary",
-        "＋",
+        createIcon("add"),
         "Inserisci manualmente",
         "Compila il mese giorno per giorno.",
         "manual",
@@ -115,7 +113,7 @@ export function menuScreen(): HTMLElement {
 
       menuAction(
         "home-action home-action-photo",
-        "▧",
+        createIcon("photo"),
         "Crea da una foto",
         "Parti dal prospetto dei turni.",
         "photo",
@@ -183,11 +181,11 @@ export function menuScreen(): HTMLElement {
       el(
         "button",
         {
-          className: "home-action home-action-import",
+          className: "home-action home-action-import home-action-backup",
           onClick: openBackupPicker,
         },
         [
-          el("span", { className: "home-action-icon", text: "↑" }),
+          el("span", { className: "home-action-icon" }, [createImportFileIcon()]),
           el("span", { className: "home-action-content" }, [
             el("span", {
               className: "home-action-title",
@@ -198,7 +196,7 @@ export function menuScreen(): HTMLElement {
               text: "Carica un programmato salvato.",
             }),
           ]),
-          el("span", { className: "home-action-arrow", text: "›" }),
+          el("span", { className: "home-action-arrow" }, [createIcon("chevron")]),
         ],
       ),
     ]),

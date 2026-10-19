@@ -7,7 +7,7 @@ interface Options {
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   options: Options = {},
-  children: (HTMLElement | string)[] = [],
+  children: (Node | string)[] = [],
 ): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
   if (options.className) node.className = options.className;

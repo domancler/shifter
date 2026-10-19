@@ -20,6 +20,7 @@ import {
   getWizardIndex,
   setWizardIndex,
 } from "../model/session";
+import { setButtonIconLabel } from "../icons";
 
 function button(
   text: string,
@@ -27,6 +28,12 @@ function button(
   onClick: () => void,
 ): HTMLButtonElement {
   return el("button", { text, className, onClick });
+}
+
+function backButton(label: string, className: string, onClick: () => void): HTMLButtonElement {
+  const result = button(label, className, onClick);
+  setButtonIconLabel(result, "arrowLeft", label);
+  return result;
 }
 
 function field(labelText: string, input: HTMLInputElement): HTMLElement {
@@ -96,7 +103,7 @@ export function manualScreen(): HTMLElement {
   ]);
 
   return el("main", { className: "screen" }, [
-    button("← Menu", "back", () => go("menu")),
+    backButton("Menu", "back", () => go("menu")),
     el("h1", { text: "Crea programmato a mano" }),
     content,
   ]);
@@ -231,7 +238,7 @@ function renderWizardDay(index: number, host: HTMLElement): void {
     ),
 
     el("div", { className: "wizard-actions" }, [
-      button("← Indietro", "secondary-button", () =>
+      backButton("Indietro", "secondary-button", () =>
         index === 0
           ? go("manual")
           : renderWizardDay(index - 1, host),
@@ -258,7 +265,7 @@ function renderWizardDay(index: number, host: HTMLElement): void {
   // }
 
   host.replaceChildren(
-    button("← Menu", "back", () => go("menu")),
+    backButton("Menu", "back", () => go("menu")),
     dateHeading,
     panel,
   );

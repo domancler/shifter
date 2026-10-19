@@ -1,3 +1,5 @@
+import { createIcon } from "./icons";
+
 export type ScreenName =
   | "login"
   | "menu"
@@ -53,7 +55,7 @@ function updateThemeButton(
   button: HTMLButtonElement,
   theme: Theme,
 ): void {
-  button.textContent = theme === "dark" ? "☀" : "☾";
+  button.replaceChildren(createIcon(theme === "dark" ? "sun" : "moon"));
 
   const label =
     theme === "dark"
