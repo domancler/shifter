@@ -3,6 +3,10 @@ import { el } from "../ui";
 import { go } from "../router";
 import { connectFromUi } from "./googleConnect";
 
+// Imposta a false per nascondere l'accesso rapido anche durante lo sviluppo.
+// La condizione DEV impedisce che venga incluso nella build di produzione.
+const SHOW_DEV_LOGIN_BYPASS = true;
+
 export function loginScreen(): HTMLElement {
     const status = el("p", {
         className: "login-status",
@@ -62,15 +66,18 @@ export function loginScreen(): HTMLElement {
 
             status,
 
-            el("div", { className: "login-separator" }, [
-                el("span", { text: "oppure" }),
-            ]),
-
-            el("button", {
-                className: "login-continue-button",
-                text: "Continua senza accedere",
-                onClick: () => go("menu"),
-            }),
+            ...(import.meta.env.DEV && SHOW_DEV_LOGIN_BYPASS
+                ? [
+                    el("div", { className: "login-separator" }, [
+                        el("span", { text: "oppure" }),
+                    ]),
+                    el("button", {
+                        className: "login-continue-button",
+                        text: "Continua senza accedere",
+                        onClick: () => go("menu"),
+                    }),
+                ]
+                : []),
         ]),
 
         el("p", {
