@@ -9,6 +9,10 @@ import {
   isGoogleConnected,
 } from "../calendar/googleClient";
 import {
+  buildPdfBlob,
+  pdfFileName 
+} from "../model/pdf";
+import {
   getActiveSchedule,
   setActiveSchedule,
   getScheduleSource,
@@ -37,6 +41,7 @@ import {
   createBackupBrandIcon,
   createChecklistBrandIcon,
   createGoogleCalendarIcon,
+  createPdfBrandIcon,
   createIcon,
   setButtonIconLabel,
 } from "../icons";
@@ -699,6 +704,40 @@ export function reviewScreen(): HTMLElement {
 
                 link.href = url;
                 link.download = wordFileName(currentSchedule);
+
+                document.body.append(link);
+                link.click();
+                link.remove();
+
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                showToast("Il documento Word è stato generato e il download è stato avviato.", "success");
+              } catch (error) {
+                console.error("Errore durante l'esportazione Word:", error);
+                showToast("Non è stato possibile generare il Word. Riprova.", "error");
+              }
+            },
+          ),
+
+          actionButton(
+            createPdfBrandIcon(),
+            "PDF",
+            "review-action-pdf",
+            async () => {
+              const currentSchedule = getActiveSchedule();
+
+              if (!currentSchedule) {
+                showToast("Non c'è nessun programmato da esportare.", "warning");
+                return;
+              }
+
+              try {
+                const blob = await buildPdfBlob(currentSchedule);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+
+                link.href = url;
+                link.download = pdfFileName(currentSchedule);
 
                 document.body.append(link);
                 link.click();

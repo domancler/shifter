@@ -18,6 +18,7 @@ const paths = {
   arrowLeft: '<path d="m15 18-6-6 6-6M9 12h11"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>',
   moon: '<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>',
+  pdf: '<path fill="#ef4444" stroke="none" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path fill="#fff" stroke="none" d="M14 2v6h6"/><path d="M7 14h10M7 17h10" stroke="#fff"/>',
 } as const;
 
 export type IconName = keyof typeof paths;
@@ -82,6 +83,18 @@ export function createBackupBrandIcon(): HTMLImageElement {
   image.loading = "lazy";
   image.addEventListener("error", () => {
     image.replaceWith(createIcon("download"));
+  }, { once: true });
+  return image;
+}
+
+export function createPdfBrandIcon(): HTMLImageElement {
+  const image = document.createElement("img");
+  image.className = "ui-brand-icon";
+  image.src = "https://img.icons8.com/color/48/pdf.png";
+  image.alt = "";
+  image.loading = "lazy";
+  image.addEventListener("error", () => {
+    image.replaceWith(createIcon("pdf"));
   }, { once: true });
   return image;
 }

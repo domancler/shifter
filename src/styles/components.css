@@ -887,7 +887,7 @@
 
 .review-actions-secondary {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
 }
 
@@ -898,6 +898,11 @@
 
 .review-actions-primary .review-action-button {
     width: 100%;
+}
+
+.review-action-pdf {
+    background:#c62828;
+    border-color:#ef5350;
 }
 
 .review-action-button {
