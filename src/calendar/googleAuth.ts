@@ -288,3 +288,125 @@ export async function ensureAccessToken(): Promise<string> {
   if (!renewed) throw new AuthError("session-expired");
   return renewed;
 }
+
+// ── Accesso con reindirizzamento ───────────────────────────────────────────
+//
+// Su iPhone, nell'app installata sulla Home il popup di Google esce dalla finestra dell'app e il risultato
+// non torna indietro. Lì si usa il flusso "a pagina intera": si va a Google, si torna all'app con il token
+// nell'indirizzo (dopo il #), lo si legge all'avvio e lo si toglie subito dalla barra degli indirizzi.
+// Serve registrare l'indirizzo dell'app tra gli "URI di reindirizzamento autorizzati" del client OAuth.
+
+const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+const REDIRECT_STATE_KEY = "shifter-google-oauth-state";
+
+/**
+ * Se usare il reindirizzamento invece del popup: automatico per l'app installata su iPhone/iPad;
+ * VITE_GOOGLE_LOGIN_MODE=redirect|popup lo forza (utile per provarlo dal computer).
+ */
+export function isRedirectSignInPreferred(
+  options: { standalone?: boolean; mode?: string } = {},
+): boolean {
+  const mode = options.mode ?? import.meta.env.VITE_GOOGLE_LOGIN_MODE;
+  if (mode === "redirect") return true;
+  if (mode === "popup") return false;
+
+  const standalone =
+    options.standalone ??
+    (typeof navigator !== "undefined" && (navigator as Navigator & { standalone?: boolean }).standalone === true);
+  return standalone;
+}
+
+/** Indirizzo a cui Google rimanda l'utente: la radice dell'app, con la barra finale (es. https://sito/shifter/). */
+export function getRedirectUri(): string {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).href;
+}
+
+export function buildRedirectAuthUrl(params: { clientId: string; redirectUri: string; state: string }): string {
+  const query = new URLSearchParams({
+    client_id: params.clientId,
+    redirect_uri: params.redirectUri,
+    response_type: "token",
+    scope: GOOGLE_SCOPE,
+    state: params.state,
+    include_granted_scopes: "true",
+    prompt: "select_account",
+  });
+  return `${AUTH_ENDPOINT}?${query}`;
+}
+
+export type RedirectResult =
+  | { status: "none" }
+  | { status: "ok"; token: string; expiresIn: number }
+  | { status: "error"; code: AuthErrorCode; detail?: string };
+
+/** Interpreta la parte dopo il # dell'indirizzo di ritorno. Un risultato senza lo stato atteso non viene da noi: si scarta. */
+export function parseRedirectHash(hash: string, expectedState: string | null): RedirectResult {
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const error = params.get("error");
+  if (!params.has("access_token") && !error) return { status: "none" };
+
+  if (!expectedState || params.get("state") !== expectedState) {
+    return { status: "error", code: "unknown", detail: "stato di accesso non valido" };
+  }
+
+  if (error) {
+    return { status: "error", code: error === "access_denied" ? "access-denied" : "unknown", detail: error };
+  }
+
+  // L'utente può togliere la spunta al calendario nella schermata di consenso.
+  if (!(params.get("scope") ?? "").split(" ").includes(GOOGLE_SCOPE)) {
+    return { status: "error", code: "scope-denied" };
+  }
+
+  return {
+    status: "ok",
+    token: params.get("access_token") ?? "",
+    expiresIn: Number(params.get("expires_in") ?? 3600) || 3600,
+  };
+}
+
+/** true se l'indirizzo contiene il ritorno da Google (serve a mostrare l'attesa mentre lo si elabora). */
+export function hasRedirectPayload(hash: string = window.location.hash): boolean {
+  return /[#&](access_token|error)=/.test(hash);
+}
+
+function randomState(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Porta l'utente alla pagina di Google. La pagina viene sostituita: al ritorno l'app riparte da capo. */
+export function startRedirectSignIn(): void {
+  const clientId = getClientId();
+  const state = randomState();
+
+  try {
+    // localStorage: sopravvive anche se iOS chiude e riapre l'app mentre l'utente è su Google.
+    localStorage.setItem(REDIRECT_STATE_KEY, state);
+  } catch {
+    throw new AuthError("unknown", "storage non disponibile");
+  }
+
+  window.location.assign(buildRedirectAuthUrl({ clientId, redirectUri: getRedirectUri(), state }));
+}
+
+/** Da chiamare all'avvio: se la pagina è il ritorno da Google salva il token e pulisce l'indirizzo. */
+export function completeRedirectSignIn(): RedirectResult {
+  if (!hasRedirectPayload()) return { status: "none" };
+
+  let expected: string | null = null;
+  try {
+    expected = localStorage.getItem(REDIRECT_STATE_KEY);
+    localStorage.removeItem(REDIRECT_STATE_KEY);
+  } catch {
+    // senza storage lo stato non si può verificare: il risultato verrà scartato
+  }
+
+  const result = parseRedirectHash(window.location.hash, expected);
+
+  // Il token non deve restare nella barra degli indirizzi né nella cronologia.
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+
+  if (result.status === "ok") store.set(result.token, result.expiresIn);
+  return result;
+}

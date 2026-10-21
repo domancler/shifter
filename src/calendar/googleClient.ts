@@ -1,4 +1,13 @@
-import { AuthError, clearAccessToken, ensureAccessToken, isSignedIn, signIn } from "./googleAuth";
+import {
+  AuthError,
+  clearAccessToken,
+  completeRedirectSignIn,
+  ensureAccessToken,
+  isRedirectSignInPreferred,
+  isSignedIn,
+  signIn,
+  startRedirectSignIn,
+} from "./googleAuth";
 
 const API_BASE = "https://www.googleapis.com/calendar/v3";
 
@@ -114,6 +123,22 @@ export async function getPrimaryCalendarInfo(): Promise<CalendarInfo> {
 }
 
 export async function connectGoogle(): Promise<CalendarInfo> {
+  if (isRedirectSignInPreferred()) {
+    startRedirectSignIn();
+
+    // La pagina sta per essere sostituita da quella di Google: non c'è nulla da restituire.
+    // Se l'utente torna indietro senza accedere (pagina ripristinata dalla cache) si annulla l'attesa.
+    return new Promise<CalendarInfo>((_resolve, reject) => {
+      window.addEventListener(
+        "pageshow",
+        (event) => {
+          if (event.persisted) reject(new AuthError("popup-closed"));
+        },
+        { once: true },
+      );
+    });
+  }
+
   await signIn("select_account");
 
   try {
@@ -124,6 +149,28 @@ export async function connectGoogle(): Promise<CalendarInfo> {
     clearAccessToken();
     saveConnectedCalendar(null);
     throw error;
+  }
+}
+
+export type ResumedSignIn =
+  | { status: "none" }
+  | { status: "connected"; calendar: CalendarInfo }
+  | { status: "error"; message: string };
+
+/** All'avvio: se si torna da Google (accesso con reindirizzamento) completa il collegamento. */
+export async function resumeRedirectSignIn(): Promise<ResumedSignIn> {
+  const result = completeRedirectSignIn();
+  if (result.status === "none") return { status: "none" };
+  if (result.status === "error") return { status: "error", message: new AuthError(result.code, result.detail).message };
+
+  try {
+    const calendar = await getPrimaryCalendarInfo();
+    saveConnectedCalendar(calendar);
+    return { status: "connected", calendar };
+  } catch (error) {
+    clearAccessToken();
+    saveConnectedCalendar(null);
+    return { status: "error", message: describeError(error) };
   }
 }
 
