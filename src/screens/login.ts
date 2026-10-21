@@ -2,6 +2,7 @@
 import { el } from "../ui";
 import { go } from "../router";
 import { connectFromUi } from "./googleConnect";
+import { diagnosticsPanel, shouldShowDiagnostics } from "../diagnostics";
 import loginLogoUrl from "../assets/login-logo.png";
 
 // Imposta a false per nascondere l'accesso rapido anche durante lo sviluppo.
@@ -85,5 +86,7 @@ export function loginScreen(): HTMLElement {
             className: "footer-note login-footer",
             text: "Google serve solo per leggere e scrivere gli eventi dei turni.",
         }),
+
+        ...(shouldShowDiagnostics() ? [diagnosticsPanel()] : []),
     ]);
 }

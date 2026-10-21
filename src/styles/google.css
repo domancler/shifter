@@ -72,3 +72,41 @@
   font-size: 14px;
   line-height: 1.45;
 }
+
+/* Diagnostica connessione (temporanea) */
+.diag-panel {
+  margin: 18px 16px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.diag-panel summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.diag-line {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.diag-button {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--surface-secondary);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.diag-result {
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
