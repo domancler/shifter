@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./googleClient", () => ({ googleFetch: vi.fn() }));
 
@@ -42,5 +42,21 @@ describe("GoogleCalendarProvider.listMarkedEvents", () => {
 
     const second = new URL("https://x" + mockFetch.mock.calls[1][0]);
     expect(second.searchParams.get("pageToken")).toBe("p2");
+  });
+});
+
+describe("calendario scelto", () => {
+  beforeEach(() => mockFetch.mockReset());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("legge dal calendario scelto invece che dal principale", async () => {
+    const storage = new Map([["shifter-calendar", JSON.stringify({ id: "abc@group.calendar.google.com", name: "Turni" })]]);
+    vi.stubGlobal("localStorage", { getItem: (k: string) => storage.get(k) ?? null });
+    mockFetch.mockResolvedValueOnce({ items: [] });
+
+    await new GoogleCalendarProvider().listMarkedEvents("2026-11-02", "2026-12-06");
+
+    const url = new URL("https://x" + mockFetch.mock.calls[0][0]);
+    expect(url.pathname).toBe("/calendars/abc%40group.calendar.google.com/events");
   });
 });

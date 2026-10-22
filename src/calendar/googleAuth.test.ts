@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   AuthError,
   GOOGLE_SCOPE,
+  REQUIRED_SCOPES,
+  SCOPE_CALENDAR_LIST,
+  SCOPE_CREATE_CALENDAR,
+  SCOPE_EVENTS,
   buildRedirectAuthUrl,
   createTokenStore,
   isRedirectSignInPreferred,
@@ -74,6 +78,22 @@ describe("accesso con reindirizzamento", () => {
     const hash = `#state=altro&access_token=tok&scope=${encodeURIComponent(GOOGLE_SCOPE)}`;
     expect(parseRedirectHash(hash, "s1")).toMatchObject({ status: "error", code: "unknown" });
     expect(parseRedirectHash(hash, null)).toMatchObject({ status: "error", code: "unknown" });
+  });
+
+  it("chiede tre permessi: eventi, elenco calendari e creazione di un calendario", () => {
+    expect(GOOGLE_SCOPE.split(" ")).toEqual([SCOPE_EVENTS, SCOPE_CALENDAR_LIST, SCOPE_CREATE_CALENDAR]);
+    expect(REQUIRED_SCOPES).toEqual([SCOPE_EVENTS, SCOPE_CALENDAR_LIST]);
+  });
+
+  it("la creazione di calendari è facoltativa, eventi ed elenco no", () => {
+    const required = encodeURIComponent(REQUIRED_SCOPES.join(" "));
+    expect(parseRedirectHash(`#state=s1&access_token=t&scope=${required}`, "s1")).toMatchObject({ status: "ok" });
+
+    const onlyEvents = encodeURIComponent(SCOPE_EVENTS);
+    expect(parseRedirectHash(`#state=s1&access_token=t&scope=${onlyEvents}`, "s1")).toMatchObject({
+      status: "error",
+      code: "scope-denied",
+    });
   });
 
   it("riconosce accesso negato e permesso del calendario tolto", () => {

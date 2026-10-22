@@ -1,4 +1,5 @@
 import { addDays } from "../model/dates";
+import { calendarEventsPath } from "./calendarSelection";
 import { googleFetch } from "./googleClient";
 import { MARKER_APP, MARKER_KEYS } from "./markers";
 import type { CalendarProvider, RemoteEvent } from "./provider";
@@ -70,7 +71,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
       });
       if (pageToken) params.set("pageToken", pageToken);
 
-      const page = await googleFetch<EventsPage>(`/calendars/primary/events?${params}`);
+      const page = await googleFetch<EventsPage>(`${calendarEventsPath()}?${params}`);
 
       for (const item of page.items ?? []) {
         if (item.status === "cancelled") continue;
@@ -87,7 +88,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
   async getEventById(eventId: string): Promise<RemoteEvent | null> {
     try {
       const event = await googleFetch<GoogleEvent>(
-        `/calendars/primary/events/${encodeURIComponent(eventId)}`,
+        `${calendarEventsPath()}/${encodeURIComponent(eventId)}`,
       );
 
       if (event.status === "cancelled") return null;

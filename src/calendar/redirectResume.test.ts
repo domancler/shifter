@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const SCOPE = [
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+].join(" ");
 
 function fakeBrowser(hash: string, savedState: string | null) {
   const storage = new Map<string, string>();

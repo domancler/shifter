@@ -1,5 +1,6 @@
 import { addDays } from "../model/dates";
 import type { Day, Schedule } from "../model/types";
+import { calendarEventsPath } from "./calendarSelection";
 import { buildMarkers, MARKER_KEYS } from "./markers";
 import { googleFetch, GoogleApiError } from "./googleClient";
 import { GoogleCalendarProvider } from "./googleProvider";
@@ -172,7 +173,7 @@ export async function saveScheduleToGoogle(
         const { day, event, description } = item;
 
         const response = await googleFetch<GoogleEventResource>(
-            `/calendars/primary/events/${encodeURIComponent(event.id)}`,
+            `${calendarEventsPath()}/${encodeURIComponent(event.id)}`,
             {
                 method: "PATCH",
                 headers: event.etag
@@ -200,7 +201,7 @@ export async function saveScheduleToGoogle(
 
         try {
             response = await googleFetch<GoogleEventResource>(
-                "/calendars/primary/events",
+                calendarEventsPath(),
                 {
                     method: "POST",
                     body: JSON.stringify(
@@ -241,7 +242,7 @@ export async function saveScheduleToGoogle(
             const description = mergeDescriptions(day.note, [existing]);
 
             response = await googleFetch<GoogleEventResource>(
-                `/calendars/primary/events/${encodeURIComponent(existing.id)}`,
+                `${calendarEventsPath()}/${encodeURIComponent(existing.id)}`,
                 {
                     method: "PATCH",
                     headers: {
@@ -282,7 +283,7 @@ export async function saveScheduleToGoogle(
     // elimina gli eventi Shifter che sono stati sostituiti.
     for (const event of deletions.values()) {
         await googleFetch<void>(
-            `/calendars/primary/events/${encodeURIComponent(event.id)}`,
+            `${calendarEventsPath()}/${encodeURIComponent(event.id)}`,
             {
                 method: "DELETE",
                 headers: event.etag

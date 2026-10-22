@@ -1,3 +1,4 @@
+import { clearSelectedCalendar } from "./calendarSelection";
 import {
   AuthError,
   clearAccessToken,
@@ -28,7 +29,7 @@ function friendlyMessage(status: number, reason: string, fallback: string): stri
     return "La Google Calendar API non è abilitata nel progetto Google Cloud.";
   }
   if (status === 403 && reason === "insufficientPermissions") {
-    return "Mancano i permessi sul calendario: ripeti l'accesso e autorizza la modifica degli eventi.";
+    return "Mancano dei permessi sul calendario: esci, ripeti l'accesso e lascia selezionate tutte le voci.";
   }
   if (status === 403 && (reason === "rateLimitExceeded" || reason === "userRateLimitExceeded")) {
     return "Troppe richieste a Google: riprova tra qualche secondo.";
@@ -175,6 +176,7 @@ export async function resumeRedirectSignIn(): Promise<ResumedSignIn> {
 }
 
 export function disconnectGoogle(): void {
+  clearSelectedCalendar(); // la scelta vale per un account: con un altro account si sceglie di nuovo
   clearAccessToken();
   saveConnectedCalendar(null);
 }

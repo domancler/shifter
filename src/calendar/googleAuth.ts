@@ -5,7 +5,18 @@
  * Non esiste refresh token: alla scadenza serve un nuovo consenso.
  */
 
-export const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+export const SCOPE_EVENTS = "https://www.googleapis.com/auth/calendar.events";
+export const SCOPE_CALENDAR_LIST = "https://www.googleapis.com/auth/calendar.calendarlist.readonly";
+export const SCOPE_CREATE_CALENDAR = "https://www.googleapis.com/auth/calendar.app.created";
+
+/** Indispensabili: leggere/scrivere eventi e vedere l'elenco dei calendari (per far scegliere dove salvare). */
+export const REQUIRED_SCOPES = [SCOPE_EVENTS, SCOPE_CALENDAR_LIST];
+
+/**
+ * Quelli chiesti all'accesso. Creare un nuovo calendario è facoltativo: se l'utente non lo concede
+ * tutto il resto funziona e "Nuovo calendario" mostra un messaggio chiaro.
+ */
+export const GOOGLE_SCOPE = [...REQUIRED_SCOPES, SCOPE_CREATE_CALENDAR].join(" ");
 
 const GIS_SRC = "https://accounts.google.com/gsi/client";
 const EXPIRY_MARGIN_MS = 60_000;
@@ -68,7 +79,7 @@ const AUTH_MESSAGES: Record<AuthErrorCode, string> = {
   "popup-closed": "La finestra di accesso è stata chiusa prima di completare.",
   "access-denied": "Accesso negato da Google.",
   "scope-denied":
-    "Per usare il calendario devi autorizzare la modifica degli eventi: ripeti l'accesso e lascia selezionata la voce del calendario.",
+    "Per usare il calendario devi autorizzare la modifica degli eventi e la lettura dell'elenco dei calendari: ripeti l'accesso e lascia selezionate le voci del calendario.",
   "session-expired": "La sessione Google è scaduta: ricollegati.",
   unknown: "Accesso a Google non riuscito. Riprova.",
 };
@@ -251,7 +262,7 @@ export async function signIn(
         }
 
         // L'utente può togliere la spunta al calendario nella schermata di consenso.
-        if (!response.access_token || !oauth2.hasGrantedAllScopes(response, GOOGLE_SCOPE)) {
+        if (!response.access_token || !oauth2.hasGrantedAllScopes(response, ...REQUIRED_SCOPES)) {
           reject(new AuthError("scope-denied"));
           return;
         }
@@ -354,7 +365,8 @@ export function parseRedirectHash(hash: string, expectedState: string | null): R
   }
 
   // L'utente può togliere la spunta al calendario nella schermata di consenso.
-  if (!(params.get("scope") ?? "").split(" ").includes(GOOGLE_SCOPE)) {
+  const granted = (params.get("scope") ?? "").split(" ");
+  if (!REQUIRED_SCOPES.every((scope) => granted.includes(scope))) {
     return { status: "error", code: "scope-denied" };
   }
 
