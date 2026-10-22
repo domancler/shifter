@@ -4,6 +4,8 @@ import { openBackupPicker } from "./import";
 import { go, type ScreenName } from "../router";
 import { disconnectGoogle, getConnectedCalendar } from "../calendar/googleClient";
 import { connectFromUi } from "./googleConnect";
+import { getSelectedCalendar } from "../calendar/calendarSelection";
+import { maybePromptForCalendar, openCalendarPicker } from "./calendarPicker";
 import { createGoogleAssistantIcon, createGoogleCalendarIcon, createIcon, createImportFileIcon, createPhotoScanIcon } from "../icons";
 
 function menuAction(
@@ -68,6 +70,19 @@ function googleStatusBar(): HTMLElement {
   );
 }
 
+function calendarRow(): HTMLElement {
+  const name = getSelectedCalendar()?.name ?? "Calendario principale";
+
+  return el("section", { className: "google-status is-connected calendar-row" }, [
+    el("span", { className: "google-status-text", text: `Calendario: ${name}` }),
+    el("button", {
+      className: "google-status-button",
+      text: "Cambia",
+      onClick: () => openCalendarPicker({ onChosen: () => go("menu") }),
+    }),
+  ]);
+}
+
 export function menuScreen(): HTMLElement {
   const calendarImport = menuAction(
     "home-action home-action-import home-action-calendar",
@@ -81,6 +96,9 @@ export function menuScreen(): HTMLElement {
   calendarImport.title = connected
     ? "Recupera un periodo da Google Calendar"
     : "Collegati a Google Calendar per usare questa funzione";
+
+  // La prima volta (o se il calendario scelto non esiste più) chiede dove salvare i turni.
+  if (connected) window.setTimeout(() => void maybePromptForCalendar(), 0);
 
   return el("main", { className: "screen home-screen" }, [
     el("header", { className: "brand-header home-header" }, [
@@ -96,6 +114,7 @@ export function menuScreen(): HTMLElement {
     ]),
 
     googleStatusBar(),
+    ...(connected ? [calendarRow()] : []),
 
     el("section", { className: "home-section" }, [
       el("h2", {
