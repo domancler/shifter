@@ -15,12 +15,19 @@ import {
   normalizeCalendarName,
   type CalendarEntry,
 } from "../calendar/googleCalendars";
-import { GoogleApiError, describeError, disconnectGoogle, getConnectedCalendar } from "../calendar/googleClient";
+import {
+  GoogleApiError,
+  consumeFreshLogin,
+  describeError,
+  disconnectGoogle,
+  getConnectedCalendar,
+} from "../calendar/googleClient";
 
 const NEW_CHOICE = "__new__";
 const DEFAULT_NEW_NAME = "Turni";
 
 let pickerOpen = false;
+let idCounter = 0;
 
 /** Il calendario principale si ricorda come "primary", così resta valido anche se cambia l'indirizzo. */
 function toSelection(entry: CalendarEntry): SelectedCalendar {
@@ -35,23 +42,45 @@ function dialogButton(text: string, className: string, onClick: () => void): HTM
   return el("button", { className, text, onClick });
 }
 
+interface ChoiceRow {
+  value: string;
+  input: HTMLInputElement;
+  /** Elemento che riceve lo stato "selezionato" (la riga, o la scheda intera per "Nuovo calendario"). */
+  card: HTMLElement;
+}
+
 /**
- * Finestra "Dove salvo i tuoi turni?": Nuovo calendario, poi quelli su cui puoi scrivere.
+ * Finestra "Dove salvo i tuoi turni?": Nuovo calendario in cima, poi quelli su cui puoi scrivere.
  * Chiusa senza scegliere, se non c'era già una scelta si usa il calendario principale.
  */
 export function openCalendarPicker(options: { notice?: string; onChosen?: () => void } = {}): void {
   if (pickerOpen) return;
   pickerOpen = true;
 
+  const titleId = `calendar-picker-title-${++idCounter}`;
   const overlay = el("div", { className: "exit-dialog-overlay" });
   const dialog = el("section", { className: "exit-dialog calendar-picker" });
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", titleId);
+
+  const heading = el("h2", { text: "Dove salvo i tuoi turni?" });
+  heading.id = titleId;
 
   const body = el("div", { className: "calendar-picker-body" });
-  const actions = el("div", { className: "exit-dialog-actions" });
+  const actions = el("div", { className: "exit-dialog-actions calendar-picker-actions" });
+
   dialog.append(
-    el("div", { className: "exit-dialog-heading" }, [el("h2", { text: "Dove salvo i tuoi turni?" })]),
+    el("header", { className: "calendar-picker-header" }, [
+      el("span", { className: "calendar-picker-badge" }, [createIcon("calendar")]),
+      el("div", {}, [
+        heading,
+        el("p", {
+          className: "calendar-picker-subtitle",
+          text: "Scegli il calendario di Google che userà Shifter.",
+        }),
+      ]),
+    ]),
     body,
     actions,
   );
@@ -78,7 +107,7 @@ export function openCalendarPicker(options: { notice?: string; onChosen?: () => 
       ? "Per scegliere il calendario servono permessi in più: esci e ripeti l'accesso lasciando selezionate tutte le voci."
       : describeError(error);
 
-    body.replaceChildren(el("p", { className: "exit-dialog-message", text: message }));
+    body.replaceChildren(el("p", { className: "calendar-picker-notice", text: message }));
     actions.replaceChildren(
       cancelButton,
       needsLogin
@@ -96,64 +125,110 @@ export function openCalendarPicker(options: { notice?: string; onChosen?: () => 
     const preferred = entries.find((entry) => (selected ? matches(selected, entry) : entry.primary)) ?? entries[0];
     let choice = preferred ? preferred.id : NEW_CHOICE;
 
+    const rows: ChoiceRow[] = [];
     const status = el("p", { className: "calendar-picker-status" });
-    const nameInput = el("input", { className: "calendar-picker-name" });
+    status.setAttribute("role", "status");
+
+    const setStatus = (text: string, isError = false) => {
+      status.textContent = text;
+      status.classList.toggle("is-error", isError);
+    };
+
+    // ── Nuovo calendario: scheda con il campo del nome che compare quando è scelta ──
+    const nameId = `calendar-picker-name-${++idCounter}`;
+    const nameInput = el("input", { className: "calendar-picker-field-input" });
+    nameInput.id = nameId;
     nameInput.type = "text";
     nameInput.maxLength = 100;
     nameInput.value = DEFAULT_NEW_NAME;
-    nameInput.setAttribute("aria-label", "Nome del nuovo calendario");
-
-    const nameRow = el("div", { className: "calendar-picker-newname" }, [nameInput]);
-
-    const refresh = () => {
-      nameRow.hidden = choice !== NEW_CHOICE;
-      for (const row of list.querySelectorAll<HTMLInputElement>("input[type=radio]")) {
-        row.checked = row.value === choice;
+    nameInput.autocomplete = "off";
+    nameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void confirm();
       }
-    };
+    });
 
-    const addRow = (value: string, content: HTMLElement[]) => {
+    const nameLabel = el("label", { className: "calendar-picker-field-label", text: "Nome del calendario" });
+    nameLabel.htmlFor = nameId;
+
+    const newField = el("div", { className: "calendar-picker-field" }, [
+      nameLabel,
+      nameInput,
+      el("p", {
+        className: "calendar-picker-hint",
+        text: "Lo creo nel tuo account Google, solo per i turni.",
+      }),
+    ]);
+
+    const makeRow = (
+      value: string,
+      lead: HTMLElement,
+      title: string,
+      subtitle: string | null,
+      card?: HTMLElement,
+    ): HTMLElement => {
       const radio = document.createElement("input");
       radio.type = "radio";
       radio.name = "calendar-choice";
       radio.value = value;
+      radio.className = "calendar-picker-radio";
       radio.addEventListener("change", () => {
         choice = value;
         refresh();
-        if (value === NEW_CHOICE) nameInput.select();
+        if (value === NEW_CHOICE) {
+          nameInput.focus();
+          nameInput.select();
+        }
       });
-      list.append(el("label", { className: "calendar-picker-row" }, [radio, ...content]));
+
+      const row = el("label", { className: "calendar-picker-row" }, [
+        radio,
+        lead,
+        el("span", { className: "calendar-picker-text" }, [
+          el("span", { className: "calendar-picker-title", text: title }),
+          ...(subtitle ? [el("span", { className: "calendar-picker-sub", text: subtitle })] : []),
+        ]),
+        el("span", { className: "calendar-picker-check" }),
+      ]);
+
+      rows.push({ value, input: radio, card: card ?? row });
+      return row;
     };
 
-    const list = el("div", { className: "calendar-picker-list" });
+    const newCard = el("div", { className: "calendar-picker-new" });
+    newCard.append(
+      makeRow(
+        NEW_CHOICE,
+        el("span", { className: "calendar-picker-plus" }, [createIcon("add")]),
+        "Nuovo calendario",
+        "Crea un calendario dedicato ai tuoi turni",
+        newCard,
+      ),
+      newField,
+    );
 
-    addRow(NEW_CHOICE, [
-      el("span", { className: "calendar-picker-plus" }, [createIcon("add")]),
-      el("span", { className: "calendar-picker-name-text", text: "Nuovo calendario" }),
-    ]);
-    list.append(nameRow);
-
+    const existing = el("div", { className: "calendar-picker-group" });
     for (const entry of entries) {
       const dot = el("span", { className: "calendar-picker-dot" });
       dot.style.backgroundColor = entry.color ?? "#9aa0a6";
-      addRow(entry.id, [
-        dot,
-        el("span", { className: "calendar-picker-name-text", text: entry.name }),
-        ...(entry.primary ? [el("span", { className: "calendar-picker-tag", text: "principale" })] : []),
-      ]);
+      existing.append(makeRow(entry.id, dot, entry.name, entry.primary ? "Calendario principale" : null));
     }
-
-    body.replaceChildren(
-      ...(options.notice ? [el("p", { className: "exit-dialog-message", text: options.notice })] : []),
-      list,
-      status,
-    );
-    refresh();
 
     const confirmButton = dialogButton("Conferma", "calendar-picker-confirm", () => void confirm());
 
-    const confirm = async () => {
-      status.textContent = "";
+    function refresh() {
+      for (const row of rows) {
+        const isChosen = row.value === choice;
+        row.input.checked = isChosen;
+        row.card.classList.toggle("is-selected", isChosen);
+      }
+      newField.hidden = choice !== NEW_CHOICE;
+      confirmButton.textContent = choice === NEW_CHOICE ? "Crea calendario" : "Conferma";
+    }
+
+    async function confirm() {
+      setStatus("");
       confirmButton.disabled = true;
 
       try {
@@ -162,10 +237,11 @@ export function openCalendarPicker(options: { notice?: string; onChosen?: () => 
         if (choice === NEW_CHOICE) {
           const parsed = normalizeCalendarName(nameInput.value);
           if ("error" in parsed) {
-            status.textContent = parsed.error;
+            setStatus(parsed.error, true);
+            nameInput.focus();
             return;
           }
-          status.textContent = "Creo il calendario…";
+          setStatus("Creo il calendario…");
           const created = await createCalendar(parsed.name, getConnectedCalendar()?.timeZone || undefined);
           chosen = { id: created.id, name: created.name };
         } else {
@@ -184,20 +260,31 @@ export function openCalendarPicker(options: { notice?: string; onChosen?: () => 
         );
         options.onChosen?.();
       } catch (error) {
-        status.textContent =
+        setStatus(
           error instanceof GoogleApiError && error.status === 403
             ? "Per creare un calendario serve un permesso in più: esci, ripeti l'accesso e lascia selezionate tutte le voci."
-            : describeError(error);
+            : describeError(error),
+          true,
+        );
       } finally {
         confirmButton.disabled = false;
       }
-    };
+    }
 
+    body.replaceChildren(
+      ...(options.notice ? [el("p", { className: "calendar-picker-notice", text: options.notice })] : []),
+      newCard,
+      ...(entries.length > 0 ? [el("p", { className: "calendar-picker-section", text: "I tuoi calendari" })] : []),
+      existing,
+      status,
+    );
+
+    refresh();
     actions.replaceChildren(cancelButton, confirmButton);
   };
 
   const load = async () => {
-    body.replaceChildren(el("p", { className: "exit-dialog-message", text: "Carico i tuoi calendari…" }));
+    body.replaceChildren(el("p", { className: "calendar-picker-notice", text: "Carico i tuoi calendari…" }));
     actions.replaceChildren(cancelButton);
 
     try {
@@ -214,14 +301,18 @@ export function openCalendarPicker(options: { notice?: string; onChosen?: () => 
 let verified = false;
 
 /**
- * Da chiamare quando si apre il menu da collegati: la prima volta chiede dove salvare;
- * dopo controlla (una volta per sessione) che il calendario scelto esista ancora.
+ * Da chiamare quando si apre il menu da collegati. Chiede dove salvare i turni:
+ *  - subito dopo un nuovo accesso (con la scelta attuale già selezionata, se c'è);
+ *  - la prima volta, se non è mai stato scelto un calendario.
+ * Negli altri casi controlla (una volta per sessione) che il calendario scelto esista ancora.
  */
 export async function maybePromptForCalendar(): Promise<void> {
   if (!getConnectedCalendar()) return;
 
   const selected = getSelectedCalendar();
-  if (!selected) {
+  const justLoggedIn = consumeFreshLogin();
+
+  if (!selected || justLoggedIn) {
     openCalendarPicker({ onChosen: () => go("menu") });
     return;
   }

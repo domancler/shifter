@@ -5,8 +5,8 @@ vi.mock("./googleClient", async (importOriginal) => ({
   googleFetch: vi.fn(),
 }));
 
-import { createSchedule, entryForShift } from "../model/schedule";
-import { googleFetch } from "./googleClient";
+import { createSchedule, entryForLeave, entryForShift } from "../model/schedule";
+import { GoogleApiError, googleFetch } from "./googleClient";
 import { saveScheduleToGoogle } from "./saveSchedule";
 
 const mockFetch = vi.mocked(googleFetch);
@@ -20,7 +20,8 @@ function schedule() {
 describe("saveScheduleToGoogle sul calendario scelto", () => {
   beforeEach(() => {
     mockFetch.mockReset();
-    vi.stubGlobal("window", { confirm: () => true });
+    // Nessun window.confirm: se il salvataggio provasse a chiedere una conferma, qui andrebbe in errore.
+    vi.stubGlobal("window", {});
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -57,6 +58,13 @@ describe("saveScheduleToGoogle sul calendario scelto", () => {
     expect(mockFetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(true);
   });
 
+  it("salva senza chiedere conferme e restituisce i conteggi", async () => {
+    select(null);
+    respondWithCreatedEvent();
+
+    await expect(saveScheduleToGoogle(schedule())).resolves.toEqual({ created: 1, updated: 0, deleted: 0 });
+  });
+
   it("senza scelta usa il calendario principale, come prima", async () => {
     select(null);
     respondWithCreatedEvent();
@@ -66,5 +74,119 @@ describe("saveScheduleToGoogle sul calendario scelto", () => {
     for (const [path] of mockFetch.mock.calls) {
       expect(String(path).startsWith("/calendars/primary/events")).toBe(true);
     }
+  });
+});
+
+// ── Conflitti 409: l'ID fisso dell'evento esiste già ────────────────────────
+
+interface Call { method: string; path: string; body?: any; headers?: Record<string, string> }
+
+describe("evento con ID già esistente (409)", () => {
+  const calls: Call[] = [];
+  let listed: unknown[] = [];
+  let lookup: () => unknown;
+  let postWithIdConflicts = true;
+
+  beforeEach(() => {
+    calls.length = 0;
+    listed = [];
+    postWithIdConflicts = true;
+    lookup = () => { throw new GoogleApiError(404, "notFound", "non trovato"); };
+    mockFetch.mockReset();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("localStorage", { getItem: () => null });
+
+    mockFetch.mockImplementation(async (path: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+      calls.push({ method, path: String(path), body, headers: init?.headers as Record<string, string> | undefined });
+
+      if (method === "GET" && String(path).includes("/events?")) return { items: listed };
+      if (method === "GET") return lookup();
+      if (method === "POST") {
+        if (body.id && postWithIdConflicts) throw new GoogleApiError(409, "duplicate", "The requested identifier already exists.");
+        return { id: body.id ?? "idgenerato", etag: '"n"', updated: "2026-10-23T10:00:00Z" };
+      }
+      return { id: "shifter20261102", etag: '"p"', updated: "2026-10-23T10:00:00Z" }; // PATCH
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const ourEvent = (overrides: Record<string, unknown> = {}) => ({
+    id: "shifter20261102", etag: '"1"', updated: "2026-10-01T00:00:00Z", summary: "07-15", description: "",
+    start: { dateTime: "2026-11-02T07:00:00+01:00" }, end: { dateTime: "2026-11-02T15:00:00+01:00" },
+    extendedProperties: { private: { turniApp: "turni-calendar", turniSchema: "1", turniDay: "2026-11-02", turniKind: "shift", turniCode: "07-15" } },
+    ...overrides,
+  });
+
+  it("evento eliminato (ID riservato): lo ricrea con un ID nuovo invece di fermarsi", async () => {
+    lookup = () => ({ id: "shifter20261102", status: "cancelled" });
+
+    const result = await saveScheduleToGoogle(schedule());
+
+    expect(result).toEqual({ created: 1, updated: 0, deleted: 0 });
+    const posts = calls.filter((call) => call.method === "POST");
+    expect(posts).toHaveLength(2);
+    expect(posts[0].body.id).toBe("shifter20261102"); // primo tentativo con l'ID fisso
+    expect(posts[1].body.id).toBeUndefined(); // secondo tentativo: ID scelto da Google
+    expect(posts[1].body.extendedProperties.private).toMatchObject({ turniApp: "turni-calendar", turniDay: "2026-11-02" });
+  });
+
+  it("conflitto ma evento non trovato: stessa strada", async () => {
+    await expect(saveScheduleToGoogle(schedule())).resolves.toEqual({ created: 1, updated: 0, deleted: 0 });
+    expect(calls.filter((call) => call.method === "POST")).toHaveLength(2);
+  });
+
+  it("evento di Shifter con quel giorno ma turno diverso: lo aggiorna (con If-Match) invece di dare errore", async () => {
+    lookup = () => ourEvent({ extendedProperties: { private: { turniApp: "turni-calendar", turniSchema: "1", turniDay: "2026-11-02", turniKind: "shift", turniCode: "23-07" } } });
+
+    const result = await saveScheduleToGoogle(schedule());
+
+    expect(result).toEqual({ created: 0, updated: 1, deleted: 0 });
+    const patch = calls.find((call) => call.method === "PATCH")!;
+    expect(patch.headers).toMatchObject({ "If-Match": '"1"' });
+    expect(patch.body.extendedProperties.private).toMatchObject({ turniCode: "07-15" });
+  });
+
+  it("evento con quell'ID ma di un altro giorno: errore chiaro e nessuna modifica", async () => {
+    lookup = () => ourEvent({ extendedProperties: { private: { turniApp: "turni-calendar", turniDay: "2026-12-25" } } });
+
+    await expect(saveScheduleToGoogle(schedule())).rejects.toThrow(/non è un evento di Shifter per quel giorno/);
+    expect(calls.some((call) => call.method === "PATCH")).toBe(false);
+  });
+
+  it("un evento già salvato che passa da turno a giornata intera azzera l'orario vecchio", async () => {
+    postWithIdConflicts = false;
+    listed = [ourEvent()];
+    const changed = createSchedule("2026-11", "2026-11-02", "2026-11-03");
+    changed.days[0].entry = entryForLeave("RS");
+
+    await saveScheduleToGoogle(changed);
+
+    const patch = calls.find((call) => call.method === "PATCH")!;
+    expect(patch.body.start).toEqual({ date: "2026-11-02", dateTime: null, timeZone: null });
+    expect(patch.body.end).toEqual({ date: "2026-11-03", dateTime: null, timeZone: null });
+  });
+
+  it("e da giornata intera a turno azzera la data", async () => {
+    postWithIdConflicts = false;
+    listed = [ourEvent({
+      summary: "RS", start: { date: "2026-11-02" }, end: { date: "2026-11-03" },
+      extendedProperties: { private: { turniApp: "turni-calendar", turniSchema: "1", turniDay: "2026-11-02", turniKind: "leave", turniCode: "RS" } },
+    })];
+
+    await saveScheduleToGoogle(schedule()); // il 02.11 è un turno 07-15
+
+    const patch = calls.find((call) => call.method === "PATCH")!;
+    expect(patch.body.start.date).toBeNull();
+    expect(patch.body.start.dateTime).toBe("2026-11-02T07:00:00+01:00");
+    expect(patch.body.start.timeZone).toBe("Europe/Rome");
+  });
+
+  it("le creazioni normali non portano null nel corpo della richiesta", async () => {
+    postWithIdConflicts = false;
+    await saveScheduleToGoogle(schedule());
+    const post = calls.find((call) => call.method === "POST")!;
+    expect(JSON.stringify(post.body)).not.toContain("null");
   });
 });

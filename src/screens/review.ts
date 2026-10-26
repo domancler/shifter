@@ -4,6 +4,7 @@ import { exportBackup } from "../model/backup";
 import { go, createThemeToggle } from "../router";
 import { buildWordBlob, wordFileName } from "../model/word";
 import { saveScheduleToGoogle } from "../calendar/saveSchedule";
+import { confirmMissingDays } from "./missingDaysDialog";
 import {
   describeError,
   isGoogleConnected,
@@ -568,25 +569,9 @@ export function reviewScreen(): HTMLElement {
         const missingDays = getUncompiledDays(currentSchedule);
 
         if (missingDays.length > 0) {
-          const dates = missingDays
-            .map((day) =>
-              formatDate(day.date, {
-                weekday: "long",
-                day: "2-digit",
-                month: "long",
-              }),
-            )
-            .map((date) => date.charAt(0).toUpperCase() + date.slice(1));
+          const proceed = await confirmMissingDays(missingDays.map((day) => day.date));
 
-          const message = [
-            `Attenzione: ci sono ${missingDays.length} giornate senza turno o giustificativo.`,
-            "",
-            ...dates.map((date) => `• ${date}`),
-            "",
-            "Vuoi salvare comunque il programma?",
-          ].join("\n");
-
-          if (!window.confirm(message)) {
+          if (!proceed) {
             showToast(
               "Salvataggio annullato. Completa le giornate mancanti e riprova.",
               "info",
@@ -603,11 +588,6 @@ export function reviewScreen(): HTMLElement {
         
         const result = await saveScheduleToGoogle(currentSchedule);
 
-
-        if (result === null) {
-          showToast("Salvataggio annullato.", "info");
-          return;
-        }
 
         setActiveSchedule(currentSchedule);
         markScheduleSaved();

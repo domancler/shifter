@@ -27,4 +27,12 @@ export interface CalendarProvider {
   listMarkedEvents(fromDate: string, toDate: string): Promise<RemoteEvent[]>;
 
   getEventById(eventId: string): Promise<RemoteEvent | null>;
+
+  /** Come getEventById, ma distingue un evento eliminato (l'ID resta riservato) da uno che non c'è. */
+  lookupEventById(eventId: string): Promise<EventLookup>;
 }
+
+export type EventLookup =
+  | { state: "missing" }
+  | { state: "cancelled" }
+  | { state: "found"; event: RemoteEvent };

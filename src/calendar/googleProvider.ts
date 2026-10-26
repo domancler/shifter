@@ -2,7 +2,7 @@ import { addDays } from "../model/dates";
 import { calendarEventsPath } from "./calendarSelection";
 import { googleFetch } from "./googleClient";
 import { MARKER_APP, MARKER_KEYS } from "./markers";
-import type { CalendarProvider, RemoteEvent } from "./provider";
+import type { CalendarProvider, EventLookup, RemoteEvent } from "./provider";
 
 interface GoogleEventTime {
   date?: string;
@@ -85,25 +85,31 @@ export class GoogleCalendarProvider implements CalendarProvider {
     return events;
   }
 
-  async getEventById(eventId: string): Promise<RemoteEvent | null> {
+  async lookupEventById(eventId: string): Promise<EventLookup> {
     try {
       const event = await googleFetch<GoogleEvent>(
         `${calendarEventsPath()}/${encodeURIComponent(eventId)}`,
       );
 
-      if (event.status === "cancelled") return null;
+      if (event.status === "cancelled") return { state: "cancelled" };
 
-      return toRemoteEvent(event);
+      const remote = toRemoteEvent(event);
+      return remote ? { state: "found", event: remote } : { state: "missing" };
     } catch (error) {
       if (
         error instanceof Error &&
         "status" in error &&
         error.status === 404
       ) {
-        return null;
+        return { state: "missing" };
       }
 
       throw error;
     }
+  }
+
+  async getEventById(eventId: string): Promise<RemoteEvent | null> {
+    const lookup = await this.lookupEventById(eventId);
+    return lookup.state === "found" ? lookup.event : null;
   }
 }

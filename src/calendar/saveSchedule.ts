@@ -13,14 +13,14 @@ interface GoogleEventResource {
     summary: string;
     description: string;
     start: {
-        date?: string;
-        dateTime?: string;
-        timeZone?: string;
+        date?: string | null;
+        dateTime?: string | null;
+        timeZone?: string | null;
     };
     end: {
-        date?: string;
-        dateTime?: string;
-        timeZone?: string;
+        date?: string | null;
+        dateTime?: string | null;
+        timeZone?: string | null;
     };
     extendedProperties: {
         private: Record<string, string>;
@@ -54,7 +54,7 @@ function eventIdForDay(date: string): string {
 
 export async function saveScheduleToGoogle(
     schedule: Schedule,
-): Promise<SaveResult | null> {
+): Promise<SaveResult> {
     const provider = new GoogleCalendarProvider();
 
     // Legge esclusivamente gli eventi contrassegnati come Shifter.
@@ -149,21 +149,6 @@ export async function saveScheduleToGoogle(
         return { created: 0, updated: 0, deleted: 0 };
     }
 
-    const confirmed = window.confirm(
-        [
-            `Salvare il programmato ${schedule.period.label} su Google Calendar?`,
-            "",
-            `Nuovi eventi: ${creations.length}`,
-            `Eventi da aggiornare: ${updates.length}`,
-            `Eventi da rimuovere: ${deletions.size}`,
-            "",
-            "Saranno modificati esclusivamente gli eventi riconosciuti come creati da Shifter.",
-            "Le note degli eventuali duplicati saranno conservate nell'evento principale.",
-        ].join("\n"),
-    );
-
-    if (!confirmed) return null;
-
     let created = 0;
     let updated = 0;
     let deleted = 0;
@@ -179,7 +164,7 @@ export async function saveScheduleToGoogle(
                 headers: event.etag
                     ? { "If-Match": event.etag }
                     : {},
-                body: JSON.stringify(eventBody(day, description)),
+                body: JSON.stringify(eventBody(day, description, undefined, "patch")),
             },
         );
 
@@ -214,48 +199,59 @@ export async function saveScheduleToGoogle(
                 throw error;
             }
 
-            const existing = await provider.getEventById(eventId);
+            const lookup = await provider.lookupEventById(eventId);
 
-            const isExpectedEvent =
-                existing !== null &&
-                existing.markers[MARKER_KEYS.app] === "turni-calendar" &&
-                existing.markers[MARKER_KEYS.day] === day.date &&
-                existing.markers[MARKER_KEYS.kind] === day.entry?.type &&
-                existing.markers[MARKER_KEYS.code] === day.entry?.code;
-
-            if (!existing || !isExpectedEvent) {
-                throw new Error(
-                    `Esiste già un evento con l'ID previsto per il ${day.date}, ` +
-                    "ma i suoi marcatori non corrispondono al turno atteso. " +
-                    "Non è stato modificato.",
-                );
-            }
-
-
-            if (!existing.etag) {
-                throw new Error(
-                    `Impossibile recuperare in sicurezza l'evento del ${day.date}: ` +
-                    "Google non ha restituito l'etag. Nessuna modifica eseguita.",
-                );
-            }
-
-            const description = mergeDescriptions(day.note, [existing]);
-
-            response = await googleFetch<GoogleEventResource>(
-                `${calendarEventsPath()}/${encodeURIComponent(existing.id)}`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "If-Match": existing.etag,
+            if (lookup.state !== "found") {
+                // Dopo l'eliminazione di un evento Google tiene l'ID riservato: se quel giorno viene
+                // ricompilato, l'evento si crea con un ID nuovo scelto da Google. Gli eventi si
+                // ritrovano comunque dai marcatori, quindi non cambia nulla per l'utente.
+                response = await googleFetch<GoogleEventResource>(
+                    calendarEventsPath(),
+                    {
+                        method: "POST",
+                        body: JSON.stringify(eventBody(day, day.note)),
                     },
-                    body: JSON.stringify(
-                        eventBody(day, description),
-                    ),
-                },
-            );
+                );
+            } else {
+                const existing = lookup.event;
 
-            recovered = true;
+                // Basta che sia un evento di Shifter per quel giorno: il contenuto viene riscritto.
+                const isOurEvent =
+                    existing.markers[MARKER_KEYS.app] === "turni-calendar" &&
+                    existing.markers[MARKER_KEYS.day] === day.date;
 
+                if (!isOurEvent) {
+                    throw new Error(
+                        `Esiste già un evento con l'ID previsto per il ${day.date}, ` +
+                        "ma non è un evento di Shifter per quel giorno. " +
+                        "Non è stato modificato.",
+                    );
+                }
+
+                if (!existing.etag) {
+                    throw new Error(
+                        `Impossibile recuperare in sicurezza l'evento del ${day.date}: ` +
+                        "Google non ha restituito l'etag. Nessuna modifica eseguita.",
+                    );
+                }
+
+                const description = mergeDescriptions(day.note, [existing]);
+
+                response = await googleFetch<GoogleEventResource>(
+                    `${calendarEventsPath()}/${encodeURIComponent(existing.id)}`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "If-Match": existing.etag,
+                        },
+                        body: JSON.stringify(
+                            eventBody(day, description, undefined, "patch"),
+                        ),
+                    },
+                );
+
+                recovered = true;
+            }
         }
 
         if (!response.id) {
@@ -396,10 +392,16 @@ function extractPreservedNotes(
     return notes;
 }
 
+/**
+ * Corpo della richiesta per un evento. In aggiornamento ("patch") i campi dell'altro tipo di orario
+ * vanno azzerati con null: un turno che diventa giornata intera (o viceversa) altrimenti
+ * manterrebbe il vecchio orario e Google rifiuterebbe la richiesta.
+ */
 function eventBody(
     day: Day,
     description: string,
     eventId?: string,
+    mode: "create" | "patch" = "create",
 ): GoogleEventResource {
     if (!day.entry) {
         throw new Error(
@@ -429,23 +431,31 @@ function eventBody(
         },
     };
 
+    const patch = mode === "patch";
+
     if (day.entry.type === "leave") {
+        const clear = patch ? { dateTime: null, timeZone: null } : {};
+
         return {
             ...common,
-            start: { date: day.date },
-            end: { date: addDays(day.date, 1) },
+            start: { date: day.date, ...clear },
+            end: { date: addDays(day.date, 1), ...clear },
         };
     }
+
+    const clear = patch ? { date: null } : {};
 
     return {
         ...common,
         start: {
             dateTime: day.entry.start,
             timeZone: "Europe/Rome",
+            ...clear,
         },
         end: {
             dateTime: day.entry.end,
             timeZone: "Europe/Rome",
+            ...clear,
         },
     };
 }
