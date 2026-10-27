@@ -1,9 +1,10 @@
 import { el } from "../ui";
-import { showToast } from "../toast";
+import { showProgressToast, showToast, type ToastHandle } from "../toast";
 import { exportBackup } from "../model/backup";
 import { go, createThemeToggle } from "../router";
 import { buildWordBlob, wordFileName } from "../model/word";
 import { saveScheduleToGoogle } from "../calendar/saveSchedule";
+import { describeSaveResult } from "../calendar/saveSummary";
 import { confirmMissingDays } from "./missingDaysDialog";
 import {
   describeError,
@@ -186,6 +187,9 @@ function returnToMenuSafely(): void {
   document.body.append(overlay);
   stayButton.focus();
 }
+
+/** Ultima notifica di salvataggio su Google Calendar (avanzamento o esito), per toglierla al salvataggio successivo. */
+let lastSaveToast: ToastHandle | null = null;
 
 export function reviewScreen(): HTMLElement {
   const schedule = getActiveSchedule();
@@ -565,6 +569,10 @@ export function reviewScreen(): HTMLElement {
 
       calendarAction.disabled = true;
 
+      // L'esito del salvataggio precedente non serve più: lo si toglie per non accumulare notifiche.
+      lastSaveToast?.close();
+      lastSaveToast = null;
+
       try {
         const missingDays = getUncompiledDays(currentSchedule);
 
@@ -580,22 +588,33 @@ export function reviewScreen(): HTMLElement {
           }
         }
 
-        showToast(
-          "Preparazione del salvataggio su Google Calendar…",
-          "info",
+        // Una sola notifica per tutto il salvataggio: prima la barra "fatte su totali",
+        // poi diventa l'esito, che resta finché non la chiudi.
+        const saveToast = showProgressToast(
+          "Salvataggio su Google Calendar",
+          "Controllo del calendario…",
         );
+        lastSaveToast = saveToast;
 
-        
-        const result = await saveScheduleToGoogle(currentSchedule);
-
+        const result = await saveScheduleToGoogle(currentSchedule, (progress) => {
+          if (progress.phase === "writing") {
+            saveToast.update({
+              message: "Aggiorno il calendario…",
+              progress: { done: progress.done, total: progress.total },
+            });
+          }
+        });
 
         setActiveSchedule(currentSchedule);
         markScheduleSaved();
 
-        showToast(
-          `Salvataggio completato. Creati: ${result.created}, aggiornati: ${result.updated}, rimossi: ${result.deleted}.`,
-          "success",
-        );
+        saveToast.update({
+          type: "success",
+          title: "Salvataggio completato",
+          message: describeSaveResult(result),
+          progress: null,
+          duration: 0,
+        });
       } catch (error) {
         console.error(
           "Errore durante il salvataggio su Google Calendar:",
@@ -603,7 +622,21 @@ export function reviewScreen(): HTMLElement {
         );
 
         markScheduleUnsaved();
-        showToast(describeError(error), "error");
+
+        const message = describeError(error);
+
+        if (lastSaveToast) {
+          // Il lavoro era già visibile nella notifica di avanzamento: la si trasforma nell'errore.
+          lastSaveToast.update({
+            type: "error",
+            title: "Salvataggio non riuscito",
+            message,
+            progress: null,
+            duration: 12000,
+          });
+        } else {
+          showToast(message, "error");
+        }
       } finally {
         calendarAction.disabled = false;
       }

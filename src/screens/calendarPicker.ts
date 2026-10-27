@@ -17,7 +17,6 @@ import {
 } from "../calendar/googleCalendars";
 import {
   GoogleApiError,
-  consumeFreshLogin,
   describeError,
   disconnectGoogle,
   getConnectedCalendar,
@@ -301,35 +300,32 @@ export function openCalendarPicker(options: { notice?: string; onChosen?: () => 
 let verified = false;
 
 /**
- * Da chiamare quando si apre il menu da collegati. Chiede dove salvare i turni:
- *  - subito dopo un nuovo accesso (con la scelta attuale già selezionata, se c'è);
- *  - la prima volta, se non è mai stato scelto un calendario.
- * Negli altri casi controlla (una volta per sessione) che il calendario scelto esista ancora.
+ * Controllo silenzioso, da fare quando si apre il menu da collegati. La finestra di scelta non si apre mai
+ * da sola: chi vuole cambiare calendario usa «Cambia». Senza una scelta si usa il calendario principale.
+ * Se il calendario scelto non esiste più (eliminato o non più condiviso) si torna al principale e lo si dice
+ * con una notifica. Il controllo si fa una volta per sessione.
  */
-export async function maybePromptForCalendar(): Promise<void> {
-  if (!getConnectedCalendar()) return;
+export async function verifySelectedCalendar(): Promise<void> {
+  if (verified || !getConnectedCalendar()) return;
 
   const selected = getSelectedCalendar();
-  const justLoggedIn = consumeFreshLogin();
-
-  if (!selected || justLoggedIn) {
-    openCalendarPicker({ onChosen: () => go("menu") });
-    return;
-  }
-
-  if (verified) return;
+  if (!selected) return;
 
   try {
     const entries = await listWritableCalendars();
     verified = true;
 
     const found = entries.find((entry) => matches(selected, entry));
+
     if (!found) {
       clearSelectedCalendar();
-      openCalendarPicker({
-        notice: `Il calendario «${selected.name}» non è più disponibile. Scegli dove salvare i turni.`,
-        onChosen: () => go("menu"),
-      });
+      showToast(
+        `Il calendario «${selected.name}» non è più disponibile: uso quello principale. Puoi sceglierne un altro da «Cambia».`,
+        "warning",
+        undefined,
+        8000,
+      );
+      go("menu"); // aggiorna la riga "Calendario: …"
     } else if (found.name !== selected.name) {
       setSelectedCalendar({ id: selected.id, name: found.name }); // rinominato su Google
     }

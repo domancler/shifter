@@ -5,7 +5,7 @@ import { go, type ScreenName } from "../router";
 import { disconnectGoogle, getConnectedCalendar } from "../calendar/googleClient";
 import { connectFromUi } from "./googleConnect";
 import { getSelectedCalendar } from "../calendar/calendarSelection";
-import { maybePromptForCalendar, openCalendarPicker } from "./calendarPicker";
+import { verifySelectedCalendar, openCalendarPicker } from "./calendarPicker";
 import { createGoogleAssistantIcon, createGoogleCalendarIcon, createIcon, createImportFileIcon, createPhotoScanIcon } from "../icons";
 
 function menuAction(
@@ -97,8 +97,8 @@ export function menuScreen(): HTMLElement {
     ? "Recupera un periodo da Google Calendar"
     : "Collegati a Google Calendar per usare questa funzione";
 
-  // La prima volta (o se il calendario scelto non esiste più) chiede dove salvare i turni.
-  if (connected) window.setTimeout(() => void maybePromptForCalendar(), 0);
+  // Controllo silenzioso: la finestra di scelta si apre solo con «Cambia».
+  if (connected) window.setTimeout(() => void verifySelectedCalendar(), 0);
 
   return el("main", { className: "screen home-screen" }, [
     el("header", { className: "brand-header home-header" }, [

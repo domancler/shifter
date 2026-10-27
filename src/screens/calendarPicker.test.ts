@@ -51,52 +51,82 @@ function choose(value: string) {
   input.dispatchEvent(new Event("change"));
 }
 
-describe("quando compare la scelta del calendario", () => {
-  it("la prima volta (nessuna scelta salvata)", async () => {
-    const { picker } = await setup();
-    await picker.maybePromptForCalendar();
+describe("la finestra non si apre da sola", () => {
+  it("senza una scelta salvata non si apre né si chiama Google: si usa il principale", async () => {
+    const { picker, calendars } = await setup();
+    await picker.verifySelectedCalendar();
     await flush();
-    expect(dialog()).not.toBeNull();
+
+    expect(dialog()).toBeNull();
+    expect(calendars.listWritableCalendars).not.toHaveBeenCalled();
+    expect(localStorage.getItem("shifter-calendar")).toBeNull();
   });
 
-  it("subito dopo un nuovo accesso, anche se una scelta esiste già, con quella preselezionata", async () => {
-    const { picker, client } = await setup({ id: "fam", name: "Famiglia" });
-    client.markFreshLogin();
+  it("con una scelta valida non disturba: nessuna finestra e nessuna notifica", async () => {
+    const { picker, toast } = await setup({ id: "fam", name: "Famiglia" });
+    await picker.verifySelectedCalendar();
+    await flush();
 
-    await picker.maybePromptForCalendar();
+    expect(dialog()).toBeNull();
+    expect(toast.showToast).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem("shifter-calendar")!).id).toBe("fam");
+  });
+
+  it("se il calendario scelto non esiste più lo dice con una notifica e torna al principale, senza aprire nulla", async () => {
+    const { picker, toast, router } = await setup({ id: "sparito", name: "Vecchio" });
+    await picker.verifySelectedCalendar();
+    await flush();
+
+    expect(dialog()).toBeNull();
+    expect(localStorage.getItem("shifter-calendar")).toBeNull();
+    const [message, type] = vi.mocked(toast.showToast).mock.calls[0];
+    expect(message).toContain("Vecchio");
+    expect(message).toContain("principale");
+    expect(type).toBe("warning");
+    expect(router.go).toHaveBeenCalledWith("menu");
+  });
+
+  it("controlla una sola volta per sessione", async () => {
+    const { picker, calendars } = await setup({ id: "fam", name: "Famiglia" });
+    await picker.verifySelectedCalendar();
+    await picker.verifySelectedCalendar();
+    expect(calendars.listWritableCalendars).toHaveBeenCalledTimes(1);
+  });
+
+  it("se non riesce a controllare (rete assente) resta zitto e riprova la volta dopo", async () => {
+    const { picker, calendars, toast } = await setup({ id: "fam", name: "Famiglia" });
+    vi.mocked(calendars.listWritableCalendars).mockRejectedValueOnce(new Error("offline"));
+
+    await picker.verifySelectedCalendar();
+    await flush();
+    expect(dialog()).toBeNull();
+    expect(toast.showToast).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem("shifter-calendar")!).id).toBe("fam");
+
+    await picker.verifySelectedCalendar();
+    expect(calendars.listWritableCalendars).toHaveBeenCalledTimes(2);
+  });
+
+  it("se il calendario è stato rinominato su Google aggiorna il nome ricordato", async () => {
+    const { picker } = await setup({ id: "fam", name: "Nome vecchio" });
+    await picker.verifySelectedCalendar();
+    expect(JSON.parse(localStorage.getItem("shifter-calendar")!)).toEqual({ id: "fam", name: "Famiglia" });
+  });
+
+  it("il principale scelto resta valido anche se il suo nome cambia", async () => {
+    const { picker, toast } = await setup({ id: "primary", name: "vecchia@mail.it" });
+    await picker.verifySelectedCalendar();
+    expect(toast.showToast).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem("shifter-calendar")!)).toEqual({ id: "primary", name: "me@gmail.com" });
+  });
+
+  it("«Cambia» la apre quando l'utente vuole, con la scelta attuale selezionata", async () => {
+    const { picker } = await setup({ id: "fam", name: "Famiglia" });
+    picker.openCalendarPicker();
     await flush();
 
     expect(dialog()).not.toBeNull();
     expect(radio("fam").checked).toBe(true);
-  });
-
-  it("con una scelta valida e senza nuovo accesso non disturba", async () => {
-    const { picker } = await setup({ id: "fam", name: "Famiglia" });
-    await picker.maybePromptForCalendar();
-    await flush();
-    expect(dialog()).toBeNull();
-  });
-
-  it("dopo il nuovo accesso compare una volta sola", async () => {
-    const { picker, client } = await setup({ id: "fam", name: "Famiglia" });
-    client.markFreshLogin();
-    await picker.maybePromptForCalendar();
-    await flush();
-    document.querySelector<HTMLButtonElement>(".exit-dialog-stay")!.click(); // Annulla
-
-    await picker.maybePromptForCalendar();
-    await flush();
-    expect(dialog()).toBeNull();
-  });
-
-  it("se il calendario scelto non esiste più lo dice e fa scegliere di nuovo", async () => {
-    const { picker } = await setup({ id: "sparito", name: "Vecchio" });
-    await picker.maybePromptForCalendar();
-    await flush();
-
-    expect(dialog()).not.toBeNull();
-    expect(document.querySelector(".calendar-picker-notice")?.textContent).toContain("Vecchio");
-    expect(localStorage.getItem("shifter-calendar")).toBeNull();
   });
 });
 

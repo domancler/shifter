@@ -7,7 +7,7 @@ vi.mock("./googleClient", async (importOriginal) => ({
 
 import { createSchedule, entryForLeave, entryForShift } from "../model/schedule";
 import { GoogleApiError, googleFetch } from "./googleClient";
-import { saveScheduleToGoogle } from "./saveSchedule";
+import { saveScheduleToGoogle, type SaveProgress } from "./saveSchedule";
 
 const mockFetch = vi.mocked(googleFetch);
 
@@ -188,5 +188,102 @@ describe("evento con ID già esistente (409)", () => {
     await saveScheduleToGoogle(schedule());
     const post = calls.find((call) => call.method === "POST")!;
     expect(JSON.stringify(post.body)).not.toContain("null");
+  });
+});
+
+// ── Avanzamento ─────────────────────────────────────────────────────────────
+
+describe("avanzamento del salvataggio", () => {
+  const events: { method: string; path: string }[] = [];
+  let listed: unknown[] = [];
+  let conflicts = false;
+
+  beforeEach(() => {
+    events.length = 0;
+    listed = [];
+    conflicts = false;
+    mockFetch.mockReset();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("localStorage", { getItem: () => null });
+
+    mockFetch.mockImplementation(async (path: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      events.push({ method, path: String(path) });
+      const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+
+      if (method === "GET" && String(path).includes("/events?")) return { items: listed };
+      if (method === "GET") return { id: "x", status: "cancelled" };
+      if (method === "POST") {
+        if (body.id && conflicts) throw new GoogleApiError(409, "duplicate", "esiste");
+        return { id: body.id ?? "nuovo", etag: '"n"', updated: "2026-10-23T10:00:00Z" };
+      }
+      return { id: "e", etag: '"p"', updated: "2026-10-23T10:00:00Z" }; // PATCH
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const marked = (day: string) => ({
+    id: `shifter${day.replace(/-/g, "")}`, etag: '"1"', updated: "2026-10-01T00:00:00Z", summary: "07-15", description: "",
+    start: { dateTime: `${day}T07:00:00+01:00` }, end: { dateTime: `${day}T15:00:00+01:00` },
+    extendedProperties: { private: { turniApp: "turni-calendar", turniSchema: "1", turniDay: day, turniKind: "shift", turniCode: "07-15" } },
+  });
+
+  /** Prepara il programmato e la raccolta dell'avanzamento; il salvataggio parte solo con start(). */
+  function prepare(s = createSchedule("2026-11", "2026-11-02", "2026-11-05")) {
+    const progress: SaveProgress[] = [];
+    return { s, progress, start: () => saveScheduleToGoogle(s, (p) => progress.push({ ...p })) };
+  }
+
+  it("prima legge il calendario, poi riporta fatte su totali, fino al totale", async () => {
+    const { s, progress, start } = prepare();
+    for (const day of s.days) day.entry = entryForShift(day.date, "07-15"); // 4 giorni da creare
+
+    await start();
+
+    expect(progress).toEqual([
+      { phase: "reading", done: 0, total: 0 },
+      { phase: "writing", done: 0, total: 4 },
+      { phase: "writing", done: 1, total: 4 },
+      { phase: "writing", done: 2, total: 4 },
+      { phase: "writing", done: 3, total: 4 },
+      { phase: "writing", done: 4, total: 4 },
+    ]);
+  });
+
+  it("il totale comprende aggiornamenti, creazioni ed eliminazioni", async () => {
+    const { s, progress, start } = prepare();
+    listed = [marked("2026-11-02"), marked("2026-11-03")];
+    s.days[0].entry = entryForShift("2026-11-02", "12-18"); // aggiorna
+    // 03.11 svuotato → elimina; 04.11 compilato senza evento → crea
+    s.days[2].entry = entryForShift("2026-11-04", "07-15");
+
+    const result = await start();
+
+    expect(result).toEqual({ created: 1, updated: 1, deleted: 1 });
+    expect(progress.at(-1)).toEqual({ phase: "writing", done: 3, total: 3 });
+    expect(progress.filter((p) => p.phase === "writing")).toHaveLength(4); // 0/3, 1/3, 2/3, 3/3
+  });
+
+  it("un giorno recuperato dopo un 409 conta come un solo passo", async () => {
+    conflicts = true;
+    const { s, progress, start } = prepare(createSchedule("2026-11", "2026-11-02", "2026-11-03"));
+    s.days[0].entry = entryForShift("2026-11-02", "07-15");
+
+    await start();
+
+    expect(progress.at(-1)).toEqual({ phase: "writing", done: 1, total: 1 });
+    expect(progress.filter((p) => p.phase === "writing")).toHaveLength(2); // 0/1 e 1/1
+  });
+
+  it("se non c'è nulla da fare riporta solo la lettura", async () => {
+    const { progress, start } = prepare();
+    await start();
+    expect(progress).toEqual([{ phase: "reading", done: 0, total: 0 }]);
+  });
+
+  it("la callback è facoltativa", async () => {
+    const s = createSchedule("2026-11", "2026-11-02", "2026-11-03");
+    s.days[0].entry = entryForShift("2026-11-02", "07-15");
+    await expect(saveScheduleToGoogle(s)).resolves.toEqual({ created: 1, updated: 0, deleted: 0 });
   });
 });

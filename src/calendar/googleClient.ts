@@ -103,20 +103,6 @@ function readConnectedCalendar(): CalendarInfo | null {
   }
 }
 
-let freshLogin = false;
-
-/** Segna che l'utente ha appena fatto l'accesso: il menu ne approfitta per chiedere dove salvare i turni. */
-export function markFreshLogin(): void {
-  freshLogin = true;
-}
-
-/** true una sola volta dopo un nuovo accesso (poi torna false). */
-export function consumeFreshLogin(): boolean {
-  const value = freshLogin;
-  freshLogin = false;
-  return value;
-}
-
 let connected: CalendarInfo | null = readConnectedCalendar();
 
 function saveConnectedCalendar(calendar: CalendarInfo | null): void {
@@ -159,7 +145,6 @@ export async function connectGoogle(): Promise<CalendarInfo> {
   try {
     const calendar = await getPrimaryCalendarInfo();
     saveConnectedCalendar(calendar);
-    markFreshLogin();
     return calendar;
   } catch (error) {
     clearAccessToken();
@@ -182,7 +167,6 @@ export async function resumeRedirectSignIn(): Promise<ResumedSignIn> {
   try {
     const calendar = await getPrimaryCalendarInfo();
     saveConnectedCalendar(calendar);
-    markFreshLogin();
     return { status: "connected", calendar };
   } catch (error) {
     clearAccessToken();

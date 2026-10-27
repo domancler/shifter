@@ -1,4 +1,5 @@
 
+import { wizardProgressPercent } from "../model/progress";
 import { el } from "../ui";
 import { go } from "../router";
 import { periodForMonth } from "../model/period";
@@ -138,9 +139,8 @@ function renderWizardDay(index: number, host: HTMLElement): void {
   setWizardIndex(index);
 
   const day = schedule.days[index];
-  const progress = Math.round(
-    ((index + 1) / schedule.days.length) * 100,
-  );
+  // Giorni già superati sul totale: alla prima giornata 0%, all'ultima non ancora 100%.
+  const progress = wizardProgressPercent(index, schedule.days.length);
 
 
   let selectionInProgress = false;

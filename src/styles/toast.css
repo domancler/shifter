@@ -129,3 +129,84 @@
         transition: none;
     }
 }
+
+/* Esito in colonna (una riga per voce) */
+
+.toast-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.toast-lines li {
+    color: var(--fg);
+    font-size: .84rem;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+/* Barra di avanzamento ("3 di 12") */
+
+.toast-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.toast-progress[hidden] {
+    display: none;
+}
+
+.toast-progress-track {
+    position: relative;
+    flex: 1;
+    height: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-secondary);
+}
+
+.toast-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width .25s ease;
+}
+
+.toast-progress-track.is-indeterminate .toast-progress-fill {
+    width: 40%;
+    animation: toast-progress-slide 1.1s ease-in-out infinite;
+}
+
+.toast-progress-label {
+    flex: none;
+    min-width: 3.8em;
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    text-align: right;
+}
+
+@keyframes toast-progress-slide {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(260%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast-progress-fill {
+        transition: none;
+    }
+
+    .toast-progress-track.is-indeterminate .toast-progress-fill {
+        width: 100%;
+        opacity: .45;
+        animation: none;
+    }
+}

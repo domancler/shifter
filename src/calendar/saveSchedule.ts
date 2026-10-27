@@ -27,7 +27,7 @@ interface GoogleEventResource {
     };
 }
 
-interface SaveResult {
+export interface SaveResult {
     created: number;
     updated: number;
     deleted: number;
@@ -52,10 +52,20 @@ function eventIdForDay(date: string): string {
     return `shifter${date.replace(/-/g, "")}`;
 }
 
+/** Avanzamento del salvataggio: prima la lettura del calendario, poi le scritture (fatte su totali). */
+export interface SaveProgress {
+    phase: "reading" | "writing";
+    done: number;
+    total: number;
+}
+
 export async function saveScheduleToGoogle(
     schedule: Schedule,
+    onProgress?: (progress: SaveProgress) => void,
 ): Promise<SaveResult> {
     const provider = new GoogleCalendarProvider();
+
+    onProgress?.({ phase: "reading", done: 0, total: 0 });
 
     // Legge esclusivamente gli eventi contrassegnati come Shifter.
     const events = await provider.listMarkedEvents(
@@ -153,6 +163,14 @@ export async function saveScheduleToGoogle(
     let updated = 0;
     let deleted = 0;
 
+    // Ogni scrittura su Google (aggiornamento, creazione, eliminazione) è un passo: l'interfaccia
+    // mostra quanti ne sono stati fatti sul totale.
+    const total = updates.length + creations.length + deletions.size;
+    const report = () =>
+        onProgress?.({ phase: "writing", done: created + updated + deleted, total });
+
+    report();
+
     // Prima aggiorna gli eventi esistenti, conservando i riferimenti.
     for (const item of updates) {
         const { day, event, description } = item;
@@ -176,6 +194,7 @@ export async function saveScheduleToGoogle(
         };
 
         updated++;
+        report();
     }
 
 
@@ -272,6 +291,8 @@ export async function saveScheduleToGoogle(
         } else {
             created++;
         }
+
+        report();
     }
 
 
@@ -289,6 +310,7 @@ export async function saveScheduleToGoogle(
         );
 
         deleted++;
+        report();
     }
 
     // Pulisce i riferimenti locali delle giornate vuote.
