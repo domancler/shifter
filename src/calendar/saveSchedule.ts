@@ -1,7 +1,8 @@
 import { addDays } from "../model/dates";
 import type { Day, Schedule } from "../model/types";
 import { calendarEventsPath } from "./calendarSelection";
-import { buildMarkers, MARKER_KEYS } from "./markers";
+import { RETRY_DELAYS, WRITE_CONCURRENCY, runPool, withRetry } from "./concurrency";
+import { MARKER_APP, MARKER_SCHEMA, buildMarkers, MARKER_KEYS } from "./markers";
 import { googleFetch, GoogleApiError } from "./googleClient";
 import { GoogleCalendarProvider } from "./googleProvider";
 import type { RemoteEvent } from "./provider";
@@ -31,6 +32,8 @@ export interface SaveResult {
     created: number;
     updated: number;
     deleted: number;
+    /** Giorni già identici su Google: non è stata fatta nessuna scrittura. */
+    unchanged: number;
 }
 
 interface PendingUpdate {
@@ -59,9 +62,18 @@ export interface SaveProgress {
     total: number;
 }
 
+export interface SaveOptions {
+    /** Quante scritture partono insieme (default: WRITE_CONCURRENCY). */
+    concurrency?: number;
+    /** Pausa tra i tentativi quando Google dice "troppe richieste" (sostituibile nei test). */
+    sleep?: (ms: number) => Promise<void>;
+    retryDelays?: number[];
+}
+
 export async function saveScheduleToGoogle(
     schedule: Schedule,
     onProgress?: (progress: SaveProgress) => void,
+    options: SaveOptions = {},
 ): Promise<SaveResult> {
     const provider = new GoogleCalendarProvider();
 
@@ -92,6 +104,7 @@ export async function saveScheduleToGoogle(
     }
 
     const updates: PendingUpdate[] = [];
+    let unchanged = 0;
     const creations: Day[] = [];
     const deletions = new Map<string, RemoteEvent>();
 
@@ -132,14 +145,23 @@ export async function saveScheduleToGoogle(
         const existing = matches.splice(selectedIndex, 1)[0];
 
         if (existing) {
-            updates.push({
-                day,
-                event: existing,
-                description: mergeDescriptions(day.note, [
-                    existing,
-                    ...matches,
-                ]),
-            });
+            const description = mergeDescriptions(day.note, [
+                existing,
+                ...matches,
+            ]);
+
+            if (matches.length === 0 && isEventUpToDate(existing, day, description)) {
+                // Già identico su Google: nessuna scrittura, si aggiorna solo il riferimento locale.
+                day.calendarRef = {
+                    provider: "google",
+                    eventId: existing.id,
+                    ...(existing.etag ? { etag: existing.etag } : {}),
+                    ...(existing.updated ? { updated: existing.updated } : {}),
+                };
+                unchanged++;
+            } else {
+                updates.push({ day, event: existing, description });
+            }
         } else {
             creations.push(day);
         }
@@ -156,7 +178,7 @@ export async function saveScheduleToGoogle(
         creations.length === 0 &&
         deletions.size === 0
     ) {
-        return { created: 0, updated: 0, deleted: 0 };
+        return { created: 0, updated: 0, deleted: 0, unchanged };
     }
 
     let created = 0;
@@ -171,11 +193,15 @@ export async function saveScheduleToGoogle(
 
     report();
 
-    // Prima aggiorna gli eventi esistenti, conservando i riferimenti.
-    for (const item of updates) {
+    // Ogni richiesta, se Google risponde "troppe richieste", viene ritentata dopo una pausa.
+    const retryOptions = { sleep: options.sleep, delays: options.retryDelays ?? RETRY_DELAYS };
+    const request = <T,>(path: string, init: RequestInit): Promise<T> =>
+        withRetry(() => googleFetch<T>(path, init), retryOptions);
+
+    const updateOne = async (item: PendingUpdate): Promise<void> => {
         const { day, event, description } = item;
 
-        const response = await googleFetch<GoogleEventResource>(
+        const response = await request<GoogleEventResource>(
             `${calendarEventsPath()}/${encodeURIComponent(event.id)}`,
             {
                 method: "PATCH",
@@ -195,16 +221,15 @@ export async function saveScheduleToGoogle(
 
         updated++;
         report();
-    }
+    };
 
-
-    for (const day of creations) {
+    const createOne = async (day: Day): Promise<void> => {
         const eventId = eventIdForDay(day.date);
         let response: GoogleEventResource;
         let recovered = false;
 
         try {
-            response = await googleFetch<GoogleEventResource>(
+            response = await request<GoogleEventResource>(
                 calendarEventsPath(),
                 {
                     method: "POST",
@@ -218,13 +243,16 @@ export async function saveScheduleToGoogle(
                 throw error;
             }
 
-            const lookup = await provider.lookupEventById(eventId);
+            const lookup = await withRetry(
+                () => provider.lookupEventById(eventId),
+                retryOptions,
+            );
 
             if (lookup.state !== "found") {
                 // Dopo l'eliminazione di un evento Google tiene l'ID riservato: se quel giorno viene
                 // ricompilato, l'evento si crea con un ID nuovo scelto da Google. Gli eventi si
                 // ritrovano comunque dai marcatori, quindi non cambia nulla per l'utente.
-                response = await googleFetch<GoogleEventResource>(
+                response = await request<GoogleEventResource>(
                     calendarEventsPath(),
                     {
                         method: "POST",
@@ -256,7 +284,7 @@ export async function saveScheduleToGoogle(
 
                 const description = mergeDescriptions(day.note, [existing]);
 
-                response = await googleFetch<GoogleEventResource>(
+                response = await request<GoogleEventResource>(
                     `${calendarEventsPath()}/${encodeURIComponent(existing.id)}`,
                     {
                         method: "PATCH",
@@ -293,13 +321,10 @@ export async function saveScheduleToGoogle(
         }
 
         report();
-    }
+    };
 
-
-    // Solo dopo aver completato aggiornamenti e creazioni,
-    // elimina gli eventi Shifter che sono stati sostituiti.
-    for (const event of deletions.values()) {
-        await googleFetch<void>(
+    const deleteOne = async (event: RemoteEvent): Promise<void> => {
+        await request<void>(
             `${calendarEventsPath()}/${encodeURIComponent(event.id)}`,
             {
                 method: "DELETE",
@@ -311,7 +336,26 @@ export async function saveScheduleToGoogle(
 
         deleted++;
         report();
-    }
+    };
+
+    const concurrency = options.concurrency ?? WRITE_CONCURRENCY;
+
+    // Giorni diversi sono indipendenti: aggiornamenti e creazioni partono a gruppi. Al primo errore
+    // non ne parte nessun altro e il salvataggio si ferma.
+    await runPool(
+        [
+            ...updates.map((item) => () => updateOne(item)),
+            ...creations.map((day) => () => createOne(day)),
+        ],
+        concurrency,
+    );
+
+    // Solo dopo aver completato aggiornamenti e creazioni,
+    // elimina gli eventi Shifter che sono stati sostituiti.
+    await runPool(
+        [...deletions.values()].map((event) => () => deleteOne(event)),
+        concurrency,
+    );
 
     // Pulisce i riferimenti locali delle giornate vuote.
     for (const day of schedule.days) {
@@ -320,7 +364,7 @@ export async function saveScheduleToGoogle(
         }
     }
 
-    return { created, updated, deleted };
+    return { created, updated, deleted, unchanged };
 }
 
 /**
@@ -419,6 +463,55 @@ function extractPreservedNotes(
  * vanno azzerati con null: un turno che diventa giornata intera (o viceversa) altrimenti
  * manterrebbe il vecchio orario e Google rifiuterebbe la richiesta.
  */
+function sameInstant(a: string, b: string): boolean {
+    const first = Date.parse(a);
+    const second = Date.parse(b);
+
+    return Number.isFinite(first) && Number.isFinite(second) && first === second;
+}
+
+/**
+ * true se l'evento su Google è già identico a quello che verrebbe scritto: turno o giustificativo,
+ * orario, nota ed esigenza. Nel dubbio risponde false: meglio una scrittura in più che una modifica persa.
+ */
+export function isEventUpToDate(
+    event: RemoteEvent,
+    day: Day,
+    description: string,
+): boolean {
+    const entry = day.entry;
+
+    if (!entry) return false;
+
+    const markers = event.markers;
+
+    const sameMarkers =
+        markers[MARKER_KEYS.app] === MARKER_APP &&
+        markers[MARKER_KEYS.schema] === MARKER_SCHEMA &&
+        markers[MARKER_KEYS.day] === day.date &&
+        markers[MARKER_KEYS.kind] === entry.type &&
+        markers[MARKER_KEYS.code] === entry.code &&
+        (markers[MARKER_KEYS.essential] === "1") === (day.isEssential === true);
+
+    if (!sameMarkers) return false;
+    if (event.summary !== entry.code) return false;
+    if (event.description.trim() !== description.trim()) return false;
+
+    if (entry.type === "leave") {
+        return (
+            event.allDay &&
+            event.start === day.date &&
+            event.end === addDays(day.date, 1)
+        );
+    }
+
+    return (
+        !event.allDay &&
+        sameInstant(event.start, entry.start) &&
+        sameInstant(event.end, entry.end)
+    );
+}
+
 function eventBody(
     day: Day,
     description: string,

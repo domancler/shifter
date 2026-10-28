@@ -12,5 +12,10 @@ export function describeSaveResult(result: SaveResult): string[] {
   if (result.updated > 0) lines.push(line(result.updated, "evento aggiornato", "eventi aggiornati"));
   if (result.deleted > 0) lines.push(line(result.deleted, "evento eliminato", "eventi eliminati"));
 
-  return lines.length > 0 ? lines : ["Nessuna modifica: il calendario era già aggiornato."];
+  // Se non è stato scritto nulla, gli eventi invariati sono il motivo: basta dirlo una volta.
+  if (lines.length === 0) return ["Nessuna modifica: il calendario era già aggiornato."];
+
+  if (result.unchanged > 0) lines.push(line(result.unchanged, "evento invariato", "eventi invariati"));
+
+  return lines;
 }
