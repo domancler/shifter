@@ -1,0 +1,302 @@
+/* Selettore di periodo (inizio e fine sul calendario) */
+
+.period-picker {
+    margin: 14px 0 6px;
+}
+
+/* Sezioni una sotto l'altra con un po' d'aria: margini semplici, senza dipendere dal flex. */
+.period-picker > * + * {
+    margin-top: 14px;
+}
+
+.period-presets {
+    display: flex;
+    gap: 8px;
+}
+
+.period-preset {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 9px 6px;
+    line-height: 1.25;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-secondary);
+    color: var(--fg);
+    font: inherit;
+    font-size: .86rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.period-preset.is-other {
+    border-style: dashed;
+}
+
+.period-preset.is-other.is-active {
+    border-style: solid;
+}
+
+.period-preset.is-active {
+    border-color: var(--accent);
+    background: var(--soft);
+    color: var(--accent);
+}
+
+.period-summary {
+    display: flex;
+    gap: 10px;
+}
+
+.period-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-secondary);
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.period-pill small,
+.period-pill strong {
+    display: block;
+}
+
+.period-pill small {
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.period-pill strong {
+    font-size: .95rem;
+    line-height: 1.25;
+}
+
+.period-pill.is-empty strong {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.period-pill.is-active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--soft);
+}
+
+.period-pill.is-active small {
+    color: var(--accent);
+}
+
+.period-info {
+    margin: 0;
+    color: var(--muted);
+    font-size: .86rem;
+    line-height: 1.4;
+}
+
+.period-calendar {
+    padding: 10px 8px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+}
+
+.period-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.period-nav-title {
+    font-size: 1rem;
+    text-transform: capitalize;
+}
+
+.period-nav-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+}
+
+.period-nav-button .ui-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.period-weekdays,
+.period-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.period-weekdays span {
+    padding: 4px 0 6px;
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.period-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+}
+
+/* Fascia continua tra inizio e fine: le celle in mezzo sono colorate per intero,
+   inizio e fine solo per metà, così la fascia sembra attaccata ai cerchi. */
+.period-cell.in-range {
+    background: var(--soft);
+}
+
+.period-cell.in-range:nth-child(7n + 1) {
+    border-radius: 999px 0 0 999px;
+}
+
+.period-cell.in-range:nth-child(7n) {
+    border-radius: 0 999px 999px 0;
+}
+
+.period-cell.band-right {
+    background: linear-gradient(to right, transparent 50%, var(--soft) 50%);
+}
+
+.period-cell.band-left {
+    background: linear-gradient(to left, transparent 50%, var(--soft) 50%);
+}
+
+.period-day {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg);
+    font: inherit;
+    font-size: .92rem;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+
+.period-cell.is-outside .period-day {
+    color: var(--muted);
+    opacity: .65;
+}
+
+.period-cell.is-today .period-day {
+    box-shadow: inset 0 0 0 1.5px var(--input-border);
+    font-weight: 800;
+}
+
+.period-cell.range-start .period-day,
+.period-cell.range-end .period-day {
+    background: var(--accent);
+    box-shadow: none;
+    color: #ffffff;
+    font-weight: 800;
+    opacity: 1;
+}
+
+.period-day:focus-visible,
+.period-pill:focus-visible,
+.period-preset:focus-visible,
+.period-nav-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (hover: hover) {
+    .period-day:hover {
+        background: var(--soft);
+    }
+
+    .period-cell.range-start .period-day:hover,
+    .period-cell.range-end .period-day:hover {
+        background: var(--accent-dark);
+    }
+
+    .period-nav-button:hover {
+        background: var(--soft);
+    }
+}
+
+/* Scelta di un mese qualsiasi: anno in alto e dodici mesi */
+
+.period-months {
+    padding: 8px 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+}
+
+.period-months-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.period-months-year {
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.period-months-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.period-month {
+    padding: 11px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-secondary);
+    color: var(--fg);
+    font: inherit;
+    font-size: .92rem;
+    font-weight: 650;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.period-month.is-current {
+    box-shadow: inset 0 0 0 1.5px var(--input-border);
+}
+
+.period-month.is-active {
+    border-color: var(--accent);
+    background: var(--soft);
+    color: var(--accent);
+}
+
+.period-month:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (hover: hover) {
+    .period-month:hover {
+        border-color: var(--input-border);
+    }
+}

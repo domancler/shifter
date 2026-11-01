@@ -1,8 +1,8 @@
 
 import { wizardProgressPercent } from "../model/progress";
 import { el } from "../ui";
+import { createPeriodPicker } from "./periodPicker";
 import { go } from "../router";
-import { periodForMonth } from "../model/period";
 import {
   createSchedule,
   entryForLeave,
@@ -37,66 +37,27 @@ function backButton(label: string, className: string, onClick: () => void): HTML
   return result;
 }
 
-function field(labelText: string, input: HTMLInputElement): HTMLElement {
-  return el("label", { className: "field" }, [
-    el("span", { text: labelText }),
-    input,
-  ]);
-}
-
 export function manualScreen(): HTMLElement {
-  const now = new Date();
-
-  const month = el("input");
-  month.type = "month";
-  month.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-  const start = el("input");
-  start.type = "date";
-
-  const end = el("input");
-  end.type = "date";
-
-  const updateRange = () => {
-    if (!month.value) return;
-
-    const [year, m] = month.value.split("-").map(Number);
-    const period = periodForMonth(year, m);
-
-    start.value = period.start;
-    end.value = period.end;
-  };
-
-  updateRange();
-  month.addEventListener("change", updateRange);
-
   const error = el("p", { className: "error" });
 
-  const content = el("section", { className: "panel" }, [
-    el("p", {
-      text: "Scegli il mese di riferimento. Shifter propone il periodo da lunedì a domenica; puoi correggere le date se necessario.",
-    }),
+  const picker = createPeriodPicker({ onChange: () => { error.textContent = ""; } });
 
-    field("Mese di riferimento", month),
-    field("Inizio programmato", start),
-    field("Fine programmato", end),
+  const content = el("section", { className: "panel" }, [
+    picker.element,
     error,
 
     button("Inizia il programmato", "primary-button", () => {
       error.textContent = "";
 
-      if (!month.value || !start.value || !end.value) {
-        error.textContent = "Seleziona il mese e le date.";
-        return;
-      }
+      const period = picker.getPeriod();
 
-      if (start.value > end.value) {
-        error.textContent = "La data iniziale deve precedere quella finale.";
+      if (!period) {
+        error.textContent = "Scegli il giorno di inizio e quello di fine.";
         return;
       }
 
       setActiveSchedule(
-        createSchedule(month.value, start.value, end.value),
+        createSchedule(period.label, period.start, period.end),
       );
       setWizardIndex(0);
       go("wizard");

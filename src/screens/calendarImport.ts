@@ -1,7 +1,7 @@
 import { el } from "../ui";
+import { createPeriodPicker } from "./periodPicker";
 import { go } from "../router";
 import { showToast } from "../toast";
-import { periodForMonth } from "../model/period";
 import { formatShortDate } from "../model/schedule";
 import { setActiveSchedule, setScheduleSource, setWizardIndex } from "../model/session";
 import { describeError, isGoogleConnected } from "../calendar/googleClient";
@@ -10,35 +10,11 @@ import { buildScheduleFromEvents, type RecoveredSchedule } from "../calendar/sch
 import { connectFromUi } from "./googleConnect";
 import { setButtonIconLabel } from "../icons";
 
-function field(labelText: string, input: HTMLInputElement): HTMLElement {
-  return el("label", { className: "field" }, [el("span", { text: labelText }), input]);
-}
-
 export function calendarImportScreen(): HTMLElement {
-  const now = new Date();
-
-  const month = el("input");
-  month.type = "month";
-  month.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-  const start = el("input");
-  start.type = "date";
-
-  const end = el("input");
-  end.type = "date";
-
-  const updateRange = () => {
-    if (!month.value) return;
-    const [year, m] = month.value.split("-").map(Number);
-    const period = periodForMonth(year, m);
-    start.value = period.start;
-    end.value = period.end;
-  };
-
-  updateRange();
-  month.addEventListener("change", updateRange);
-
   const status = el("p", { className: "import-status" });
+
+  const picker = createPeriodPicker({ onChange: () => { status.textContent = ""; } });
+
   const result = el("section", { className: "panel calendar-result" });
   result.hidden = true;
 
@@ -98,13 +74,10 @@ export function calendarImportScreen(): HTMLElement {
     status.textContent = "";
     result.hidden = true;
 
-    if (!month.value || !start.value || !end.value) {
-      status.textContent = "Seleziona il mese e le date.";
-      return;
-    }
+    const period = picker.getPeriod();
 
-    if (start.value > end.value) {
-      status.textContent = "La data iniziale deve precedere quella finale.";
+    if (!period) {
+      status.textContent = "Scegli il giorno di inizio e quello di fine.";
       return;
     }
 
@@ -120,9 +93,9 @@ export function calendarImportScreen(): HTMLElement {
 
       status.textContent = "Lettura del calendario in corso…";
 
-      const events = await new GoogleCalendarProvider().listMarkedEvents(start.value, end.value);
+      const events = await new GoogleCalendarProvider().listMarkedEvents(period.start, period.end);
       const outcome = buildScheduleFromEvents(
-        { label: month.value, start: start.value, end: end.value },
+        { label: period.label, start: period.start, end: period.end },
         events,
       );
 
@@ -145,12 +118,7 @@ export function calendarImportScreen(): HTMLElement {
     backButton,
     el("h1", { text: "Recupera da Google Calendar" }),
     el("section", { className: "panel" }, [
-      el("p", {
-        text: "Scegli il mese di riferimento. Shifter legge dal tuo calendario i turni che ha creato e li apre nella revisione. Non modifica nulla su Google.",
-      }),
-      field("Mese di riferimento", month),
-      field("Inizio programmato", start),
-      field("Fine programmato", end),
+      picker.element,
       fetchButton,
       status,
     ]),
