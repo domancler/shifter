@@ -3,7 +3,7 @@ export const SHIFT_CODES = [
 ] as const;
 export type ShiftCode = (typeof SHIFT_CODES)[number];
 
-export const LEAVE_CODES = ["CO", "FS", "ROL", "RS", "RF"] as const;
+export const LEAVE_CODES = ["CO", "FS", "ROL", "RS", "RF", "RR"] as const;
 export type LeaveCode = (typeof LEAVE_CODES)[number];
 
 export type Entry =

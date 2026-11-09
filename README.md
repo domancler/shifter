@@ -179,7 +179,7 @@ Codice	Gruppo	Inizio	Fine	Titolo evento
 00-06	notte	D 00:00	D 06:00	Turno 00-06
 Esempio: 16/10 = 07-15 e 17/10 = 23-07 significa evento dal 16 alle 07:00 alle 15:00, ed evento dal 16 alle 23:00 al 17 alle 07:00.
 Giustificativi
-	• Codici: CO, FS, ROL, RS, RF.
+	• Codici: CO, FS, ROL, RS, RF, RR.
 	• Eventi a giornata intera, titolo uguale al codice, esclusivi rispetto al turno dello stesso giorno.
 	• I significati servono solo per la legenda del Word (Fase 5).
 Avvisi in revisione (non bloccanti)
@@ -217,7 +217,7 @@ Modifiche concorrenti
 ts
 type Entry =
   | { type: "shift"; code: ShiftCode; start: string; end: string }  // ISO locale con offset
-  | { type: "leave"; code: "CO" | "FS" | "ROL" | "RS", "RF" }
+  | { type: "leave"; code: "CO" | "FS" | "ROL" | "RS", "RF", "RR" }
   | null;
 type ShiftCode = "06-12" | "07-15" | "12-18" | "13-19" | "15-23" | "18-00" | "23-07" | "00-06";
 interface Day {
@@ -265,7 +265,7 @@ Regole di importazione
 	• Si apre la revisione senza toccare Google Calendar. Il salvataggio è un'operazione separata.
 	• I calendarRef importati sono solo indizi: al salvataggio si ricontrolla su Google tramite turniDay.
 7. Rimandato
-	• Significati di CO, FS, ROL, RS, RF (Fase 5, legenda Word).
+	• Significati di CO, FS, ROL, RS, RF, RR (Fase 5, legenda Word).
 	• Layout Word e possibile modello ufficiale; se il Word deve mostrare solo la tua riga o anche quelle dei colleghi (Fase 5).
 	• OCR, considerato un bonus: la foto è scattata attraverso un vetro (Fase 6).
 	• Dettagli di HTTPS, Tailscale (già attivo) e client OAuth (Fasi 3 e 7).
